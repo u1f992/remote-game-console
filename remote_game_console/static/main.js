@@ -64,6 +64,12 @@ applyVideoConfig();
 window.addEventListener("resize", updateVideoSize);
 window.addEventListener("orientationchange", updateVideoSize);
 
+// Check if audio is disabled via query parameter
+function isAudioDisabled() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("noaudio") === "1";
+}
+
 // Web Audio API for streaming
 let audioContext = null;
 let audioConfig = null;
@@ -264,8 +270,12 @@ const startAudio = () => {
   document.removeEventListener("touchstart", startAudio);
 };
 
-document.addEventListener("click", startAudio);
-document.addEventListener("touchstart", startAudio);
+if (isAudioDisabled()) {
+  console.log("Audio disabled by query parameter");
+} else {
+  document.addEventListener("click", startAudio);
+  document.addEventListener("touchstart", startAudio);
+}
 
 // Button mappings
 const buttonMap = {
@@ -398,7 +408,10 @@ Object.keys(dpadButtons).forEach((btnId) => {
 
 // Joystick setup
 const joystickSize = 125;
-document.documentElement.style.setProperty("--joystick-size-value", joystickSize);
+document.documentElement.style.setProperty(
+  "--joystick-size-value",
+  joystickSize
+);
 
 const leftZone = document.getElementById("left-joystick");
 const rightZone = document.getElementById("right-joystick");

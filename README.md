@@ -29,8 +29,8 @@ $ uv sync
 ```bash
 uv run python -m remote_game_console \
   --video-capture 0 \
-  --width 800 \
-  --height 600 \
+  --width 640 \
+  --height 480 \
   --serial-port /dev/ttyUSB0 \
   --keep-alive-interval 30 \
   --audio-device 1 \
@@ -40,6 +40,14 @@ uv run python -m remote_game_console \
 ```
 
 Access the web UI at `http://localhost:8080`
+
+## Disable Audio
+
+To disable audio streaming, add the `noaudio=1` query parameter:
+
+```
+http://localhost:8080/?noaudio=1
+```
 
 ## Audio Latency Control
 
