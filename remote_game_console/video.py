@@ -6,6 +6,7 @@ import dataclasses
 import multiprocessing
 import multiprocessing.sharedctypes
 import numpy as np
+import time
 import typing
 
 import remote_game_console.cv2_util
@@ -123,6 +124,8 @@ def _daemon(
     args: Arguments,
     initialized: remote_game_console.protocols.Event,
     ready: remote_game_console.protocols.Event,
+    frame_updated: remote_game_console.protocols.Event,
+    frame_counter: remote_game_console.protocols.Value,
     cancel: remote_game_console.protocols.Event,
 ) -> None:
     mat = np.frombuffer(shared_buffer, dtype=np.uint8).reshape(actual_shape)
@@ -148,6 +151,9 @@ def _daemon(
                 ret = cap.read(mat)
                 if not ret:
                     raise RuntimeError("cannot get frame")
+                # Increment frame counter and signal that a new frame is available
+                frame_counter.value += 1
+                frame_updated.set()
             finally:
                 ready.set()
 
@@ -158,15 +164,48 @@ class Video:
         shared_buffer: _SharedBuffer,
         actual_shape: tuple[int, int, int],
         ready: remote_game_console.protocols.Event,
+        frame_updated: remote_game_console.protocols.Event,
+        frame_counter: remote_game_console.protocols.Value,
     ):
         self.__mat: cv2.typing.MatLike = np.frombuffer(
             shared_buffer, dtype=np.uint8
         ).reshape(actual_shape)
         self.__ready = ready
+        self.__frame_updated = frame_updated
+        self.__frame_counter = frame_counter
+        self.__last_frame_count = 0
 
     @contextlib.contextmanager
-    def get(self) -> typing.Generator[cv2.typing.MatLike, None, None]:
-        if not self.__ready.wait(timeout=1):
+    def get(
+        self, wait_for_new_frame: bool = False, timeout: float | None = None
+    ) -> typing.Generator[cv2.typing.MatLike, None, None]:
+        start_time = time.time() if timeout is not None else None
+
+        # If wait_for_new_frame is True, wait until a new frame is available
+        if wait_for_new_frame:
+            while True:
+                current_count = self.__frame_counter.value
+                if current_count != self.__last_frame_count:
+                    self.__last_frame_count = current_count
+                    break
+                self.__frame_updated.clear()
+
+                # Calculate remaining timeout
+                remaining_timeout = timeout
+                if start_time is not None and timeout is not None:
+                    elapsed = time.time() - start_time
+                    remaining_timeout = max(0, timeout - elapsed)
+
+                if not self.__frame_updated.wait(remaining_timeout):
+                    raise TimeoutError("_Video.get: frame_updated.wait")
+
+        # Calculate remaining timeout for ready.wait()
+        remaining_timeout = timeout
+        if start_time is not None and timeout is not None:
+            elapsed = time.time() - start_time
+            remaining_timeout = max(0, timeout - elapsed)
+
+        if not self.__ready.wait(remaining_timeout):
             raise TimeoutError("_Video.get: ready.wait")
         self.__ready.clear()
         try:
@@ -182,17 +221,28 @@ def start(
     shared_buffer, actual_shape = _get_shared_buffer(args)
     initialized = manager.Event()
     ready = manager.Event()
+    frame_updated = manager.Event()
+    frame_counter = manager.Value("i", 0)
     cancel = manager.Event()
     daemon = multiprocessing.Process(
         target=_daemon,
-        args=(shared_buffer, actual_shape, args, initialized, ready, cancel),
+        args=(
+            shared_buffer,
+            actual_shape,
+            args,
+            initialized,
+            ready,
+            frame_updated,
+            frame_counter,
+            cancel,
+        ),
         daemon=True,
     )
     daemon.start()
     if not initialized.wait(timeout=args.initialization_timeout):
         raise TimeoutError("start: initialized.wait")
     try:
-        yield Video(shared_buffer, actual_shape, ready)
+        yield Video(shared_buffer, actual_shape, ready, frame_updated, frame_counter)
     finally:
         cancel.set()
         try:

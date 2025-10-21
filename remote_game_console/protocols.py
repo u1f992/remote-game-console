@@ -48,6 +48,20 @@ class List(typing.Protocol):
         raise NotImplementedError()
 
 
+class Value(typing.Protocol):
+    """
+    Protocol for multiprocessing.Manager().Value().
+    """
+
+    @property
+    def value(self) -> int:
+        raise NotImplementedError()
+
+    @value.setter
+    def value(self, val: int) -> None:
+        raise NotImplementedError()
+
+
 class Manager(typing.Protocol):
     """
     Protocol for multiprocessing.Manager to enable dependency injection.
@@ -60,4 +74,7 @@ class Manager(typing.Protocol):
         raise NotImplementedError()
 
     def list(self) -> List:
+        raise NotImplementedError()
+
+    def Value(self, typecode: str, value: int) -> Value:
         raise NotImplementedError()

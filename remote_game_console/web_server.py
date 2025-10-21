@@ -64,7 +64,9 @@ def validate(args: argparse.Namespace) -> Arguments | None:
 
     override_aspect_ratio: tuple[float, float] | None = None
     if has_width and has_height:
-        if not isinstance(args.override_aspect_ratio_width, float) or not isinstance(args.override_aspect_ratio_height, float):
+        if not isinstance(args.override_aspect_ratio_width, float) or not isinstance(
+            args.override_aspect_ratio_height, float
+        ):
             return None
         width = max(0.0, args.override_aspect_ratio_width)
         height = max(0.0, args.override_aspect_ratio_height)
@@ -107,15 +109,14 @@ def start(
 
     def _generate_frames() -> typing.Generator[bytes, None, None]:
         while True:
-            with video.get() as mat:
+            with video.get(wait_for_new_frame=True, timeout=1.0) as mat:
                 _, buffer = cv2.imencode(".jpg", mat)
-                frame_bytes = buffer.tobytes()
 
-                yield (
-                    b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
-                    + frame_bytes
-                    + b"\r\n"
-                )
+            yield (
+                b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
+                + buffer.tobytes()
+                + b"\r\n"
+            )
 
     @app.route("/video_feed")
     def _video_feed() -> flask.Response:
@@ -143,18 +144,16 @@ def start(
                     data = client.get()
                     # Send chunk size (4 bytes, big-endian) followed by data
                     chunk_size = len(data)
-                    yield chunk_size.to_bytes(4, byteorder='big') + data
+                    yield chunk_size.to_bytes(4, byteorder="big") + data
                 except TimeoutError:
                     # Send zero-length chunk on timeout
-                    yield (0).to_bytes(4, byteorder='big')
+                    yield (0).to_bytes(4, byteorder="big")
         finally:
             audio.remove_client(client)
 
     @app.route("/audio_stream")
     def _audio_stream() -> flask.Response:
-        return flask.Response(
-            _generate_audio(), mimetype="application/octet-stream"
-        )
+        return flask.Response(_generate_audio(), mimetype="application/octet-stream")
 
     @app.route("/audio_config")
     def _audio_config() -> flask.Response:
