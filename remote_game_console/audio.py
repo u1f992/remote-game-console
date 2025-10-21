@@ -176,6 +176,10 @@ class Audio:
         self.sample_width = 2  # paInt16 = 2 bytes
         self.__queue_size = queue_size
 
+    @property
+    def queue(self) -> remote_game_console.protocols.Queue:
+        return self.__queue
+
     def get(self, skip_if_behind: float = 0.0) -> bytes:
         try:
             # Get data from queue
@@ -241,7 +245,7 @@ class AudioManager:
     def remove_client(self, audio: Audio) -> None:
         """Remove a client's queue from the broadcast list."""
         try:
-            self.__client_queues.remove(audio._Audio__queue)
+            self.__client_queues.remove(audio.queue)
         except ValueError:
             # Queue already removed
             pass

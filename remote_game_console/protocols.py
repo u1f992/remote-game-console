@@ -29,7 +29,13 @@ class Queue(typing.Protocol):
     def get(self, block: bool = True, timeout: float | None = None) -> bytes:
         raise NotImplementedError()
 
+    def get_nowait(self) -> bytes:
+        raise NotImplementedError()
+
     def put_nowait(self, item: bytes) -> None:
+        raise NotImplementedError()
+
+    def qsize(self) -> int:
         raise NotImplementedError()
 
 
