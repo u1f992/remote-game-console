@@ -92,10 +92,14 @@ def validate(args: argparse.Namespace) -> Arguments | None:
 
 
 def _daemon(
-    audio_queue: remote_game_console.protocols.Queue,
+    client_queues: remote_game_console.protocols.List,
     args: Arguments,
     cancel: remote_game_console.protocols.Event,
 ) -> None:
+    # Track consecutive failures for each queue to detect disconnected clients
+    failure_counts: dict[int, int] = {}
+    MAX_CONSECUTIVE_FAILURES = args.queue_size * 2  # Threshold for removing stale queues
+
     p = pyaudio.PyAudio()
     try:
         stream = p.open(
@@ -110,11 +114,36 @@ def _daemon(
             while not cancel.is_set():
                 try:
                     data = stream.read(args.chunk, exception_on_overflow=False)
-                    try:
-                        audio_queue.put_nowait(data)
-                    except queue.Full:
-                        # Skip if queue is full
-                        pass
+
+                    # Broadcast to all client queues (iterate over a copy to allow safe removal)
+                    current_queues = list(client_queues)
+                    queues_to_remove = []
+
+                    for q in current_queues:
+                        queue_id = id(q)
+                        try:
+                            q.put_nowait(data)
+                            # Reset failure count on success
+                            failure_counts[queue_id] = 0
+                        except queue.Full:
+                            # Increment failure count
+                            failure_counts[queue_id] = failure_counts.get(queue_id, 0) + 1
+
+                            # Mark for removal if threshold exceeded
+                            if failure_counts[queue_id] >= MAX_CONSECUTIVE_FAILURES:
+                                queues_to_remove.append(q)
+
+                    # Remove stale queues (likely disconnected clients)
+                    for q in queues_to_remove:
+                        try:
+                            client_queues.remove(q)
+                            queue_id = id(q)
+                            if queue_id in failure_counts:
+                                del failure_counts[queue_id]
+                            print(f"Removed stale audio queue (consecutive failures: {MAX_CONSECUTIVE_FAILURES})")
+                        except ValueError:
+                            # Queue already removed
+                            pass
                 except Exception as e:
                     print(f"Audio read error: {e}")
                     break
@@ -142,6 +171,41 @@ class Audio:
             raise TimeoutError("Audio.get: queue.get timeout")
 
 
+class AudioManager:
+    """Manages audio broadcasting to multiple clients."""
+
+    def __init__(
+        self,
+        client_queues: remote_game_console.protocols.List,
+        manager: remote_game_console.protocols.Manager,
+        rate: int,
+        channels: int,
+        gain: float,
+        queue_size: int,
+    ):
+        self.__client_queues = client_queues
+        self.__manager = manager
+        self.rate = rate
+        self.channels = channels
+        self.gain = gain
+        self.sample_width = 2  # paInt16 = 2 bytes
+        self.__queue_size = queue_size
+
+    def create_client(self) -> Audio:
+        """Create a new Audio instance for a client with its own queue."""
+        client_queue = self.__manager.Queue(maxsize=self.__queue_size)
+        self.__client_queues.append(client_queue)
+        return Audio(client_queue, self.rate, self.channels, self.gain)
+
+    def remove_client(self, audio: Audio) -> None:
+        """Remove a client's queue from the broadcast list."""
+        try:
+            self.__client_queues.remove(audio._Audio__queue)
+        except ValueError:
+            # Queue already removed
+            pass
+
+
 def _test_device(args: Arguments) -> None:
     p = pyaudio.PyAudio()
     try:
@@ -161,19 +225,19 @@ def _test_device(args: Arguments) -> None:
 @contextlib.contextmanager
 def start(
     args: Arguments, manager: remote_game_console.protocols.Manager
-) -> typing.Generator[Audio, None, None]:
+) -> typing.Generator[AudioManager, None, None]:
     _test_device(args)
 
-    audio_queue = manager.Queue(maxsize=args.queue_size)
+    client_queues = manager.list()
     cancel = manager.Event()
     daemon = multiprocessing.Process(
         target=_daemon,
-        args=(audio_queue, args, cancel),
+        args=(client_queues, args, cancel),
         daemon=True,
     )
     daemon.start()
     try:
-        yield Audio(audio_queue, args.rate, args.channels, args.gain)
+        yield AudioManager(client_queues, manager, args.rate, args.channels, args.gain, args.queue_size)
     finally:
         cancel.set()
         try:
