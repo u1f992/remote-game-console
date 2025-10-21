@@ -1,6 +1,5 @@
 import argparse
 import dataclasses
-import logging
 import pathlib
 import time
 import typing
@@ -108,13 +107,6 @@ def start(
         __name__, static_folder=str(static_folder), static_url_path="/static"
     )
 
-    # Filter out audio_chunk logs
-    class AudioChunkFilter(logging.Filter):
-        def filter(self, record: logging.LogRecord) -> bool:
-            return "/audio_chunk" not in record.getMessage()
-
-    logging.getLogger("werkzeug").addFilter(AudioChunkFilter())
-
     @app.route("/")
     def _index() -> flask.Response:
         return flask.send_from_directory(str(static_folder), "index.html")
@@ -149,17 +141,6 @@ def start(
         return flask.Response(
             _generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame"
         )
-
-    @app.route("/audio_chunk")
-    def _audio_chunk() -> flask.Response:
-        client = audio.create_client()
-        try:
-            data = client.get()
-            return flask.Response(data, mimetype="application/octet-stream")
-        except TimeoutError:
-            return flask.Response(b"", mimetype="application/octet-stream", status=204)
-        finally:
-            audio.remove_client(client)
 
     def _generate_audio() -> typing.Generator[bytes, None, None]:
         """Stream audio chunks continuously over a single HTTP connection."""
