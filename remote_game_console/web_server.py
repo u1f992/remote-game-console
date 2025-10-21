@@ -2,9 +2,9 @@ import argparse
 import dataclasses
 import logging
 import pathlib
+import time
 import typing
 
-import cv2
 import flask
 
 import remote_game_console.audio
@@ -37,6 +37,11 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
             "default": 2,
             "help": "minimum buffer before playback starts. default: 2",
         },
+        "--jpeg-quality": {
+            "type": int,
+            "default": 95,
+            "help": "JPEG encoding quality (0-100). default: 95",
+        },
     }
     for name, kwargs in args.items():
         parser.add_argument(name, **kwargs)
@@ -48,6 +53,7 @@ class Arguments:
     override_aspect_ratio: tuple[float, float] | None
     audio_buffer_size: int
     audio_min_buffer: int
+    jpeg_quality: int
 
 
 def validate(args: argparse.Namespace) -> Arguments | None:
@@ -82,7 +88,11 @@ def validate(args: argparse.Namespace) -> Arguments | None:
         return None
     audio_min_buffer = max(1, args.audio_min_buffer)
 
-    return Arguments(port, override_aspect_ratio, audio_buffer_size, audio_min_buffer)
+    if not isinstance(args.jpeg_quality, int):
+        return None
+    jpeg_quality = max(1, min(100, args.jpeg_quality))
+
+    return Arguments(port, override_aspect_ratio, audio_buffer_size, audio_min_buffer, jpeg_quality)
 
 
 def start(
@@ -108,13 +118,27 @@ def start(
         return flask.send_from_directory(str(static_folder), "index.html")
 
     def _generate_frames() -> typing.Generator[bytes, None, None]:
+        frame_count = 0
+        start_time = time.time()
+        log_interval = 5.0  # Log FPS every 5 seconds
+
         while True:
-            with video.get(wait_for_new_frame=True, timeout=1.0) as mat:
-                _, buffer = cv2.imencode(".jpg", mat)
+            frame_bytes = video.get_jpeg(quality=args.jpeg_quality, wait_for_new_frame=True, timeout=1.0)
+
+            frame_count += 1
+            current_time = time.time()
+            elapsed = current_time - start_time
+
+            # Log FPS every log_interval seconds
+            if elapsed >= log_interval:
+                fps = frame_count / elapsed
+                app.logger.info(f"Video streaming FPS: {fps:.2f}")
+                frame_count = 0
+                start_time = current_time
 
             yield (
                 b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
-                + buffer.tobytes()
+                + frame_bytes
                 + b"\r\n"
             )
 

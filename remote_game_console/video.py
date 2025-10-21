@@ -6,6 +6,7 @@ import dataclasses
 import multiprocessing
 import multiprocessing.sharedctypes
 import numpy as np
+import threading
 import time
 import typing
 
@@ -174,6 +175,9 @@ class Video:
         self.__frame_updated = frame_updated
         self.__frame_counter = frame_counter
         self.__last_frame_count = 0
+        self.__cached_jpeg: bytes | None = None
+        self.__cached_jpeg_frame_count: int | None = None
+        self.__thread_local = threading.local()
 
     @contextlib.contextmanager
     def get(
@@ -212,6 +216,71 @@ class Video:
             yield self.__mat
         finally:
             self.__ready.set()
+
+    def get_jpeg(
+        self,
+        quality: int = 95,
+        wait_for_new_frame: bool = False,
+        timeout: float | None = None,
+    ) -> bytes:
+        """
+        Get JPEG-encoded frame with caching for multiple clients.
+        """
+        start_time = time.time() if timeout is not None else None
+
+        # Get or initialize thread-local last frame count
+        if not hasattr(self.__thread_local, 'last_frame_count'):
+            self.__thread_local.last_frame_count = 0
+
+        # If wait_for_new_frame is True, wait until a new frame is available
+        if wait_for_new_frame:
+            while True:
+                current_count = self.__frame_counter.value
+                if current_count != self.__thread_local.last_frame_count:
+                    self.__thread_local.last_frame_count = current_count
+                    break
+                self.__frame_updated.clear()
+
+                # Calculate remaining timeout
+                remaining_timeout = timeout
+                if start_time is not None and timeout is not None:
+                    elapsed = time.time() - start_time
+                    remaining_timeout = max(0, timeout - elapsed)
+
+                if not self.__frame_updated.wait(remaining_timeout):
+                    raise TimeoutError("_Video.get_jpeg: frame_updated.wait")
+
+        # Check if we have a cached JPEG for the current frame
+        current_count = self.__frame_counter.value
+        if (
+            self.__cached_jpeg is not None
+            and self.__cached_jpeg_frame_count == current_count
+        ):
+            return self.__cached_jpeg
+
+        # Calculate remaining timeout for get()
+        remaining_timeout = timeout
+        if start_time is not None and timeout is not None:
+            elapsed = time.time() - start_time
+            remaining_timeout = max(0, timeout - elapsed)
+
+        # Get fresh frame and encode it
+        with self.get(wait_for_new_frame=False, timeout=remaining_timeout) as mat:
+            _, buffer = cv2.imencode(
+                ".jpg",
+                mat,
+                [
+                    cv2.IMWRITE_JPEG_QUALITY,
+                    quality,
+                    cv2.IMWRITE_JPEG_OPTIMIZE,
+                    1,
+                    cv2.IMWRITE_JPEG_PROGRESSIVE,
+                    1,
+                ],
+            )
+        self.__cached_jpeg = buffer.tobytes()
+        self.__cached_jpeg_frame_count = current_count
+        return self.__cached_jpeg
 
 
 @contextlib.contextmanager

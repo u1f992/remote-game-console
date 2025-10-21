@@ -1,4 +1,5 @@
 import argparse
+import logging
 import multiprocessing
 import sys
 
@@ -9,6 +10,8 @@ import remote_game_console.web_server
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
+
     if "--list-audio-devices" in sys.argv:
         remote_game_console.audio.list_devices()
         exit(0)
@@ -39,4 +42,6 @@ def main() -> None:
         remote_game_console.serial_port.start(serial_port_args, manager) as controller,
     ):
         print(f"Starting web server on http://0.0.0.0:{web_server_args.port}")
-        remote_game_console.web_server.start(web_server_args, camera, audio_stream, controller)
+        remote_game_console.web_server.start(
+            web_server_args, camera, audio_stream, controller
+        )
