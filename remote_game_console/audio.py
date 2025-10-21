@@ -96,6 +96,10 @@ def _daemon(
     args: Arguments,
     cancel: remote_game_console.protocols.Event,
 ) -> None:
+    # Track consecutive failures for each queue to detect disconnected clients
+    failure_counts: dict[int, int] = {}
+    MAX_CONSECUTIVE_FAILURES = args.queue_size * 2  # Threshold for removing stale queues
+
     p = pyaudio.PyAudio()
     try:
         stream = p.open(
@@ -110,12 +114,35 @@ def _daemon(
             while not cancel.is_set():
                 try:
                     data = stream.read(args.chunk, exception_on_overflow=False)
-                    # Broadcast to all client queues
-                    for q in client_queues:
+
+                    # Broadcast to all client queues (iterate over a copy to allow safe removal)
+                    current_queues = list(client_queues)
+                    queues_to_remove = []
+
+                    for q in current_queues:
+                        queue_id = id(q)
                         try:
                             q.put_nowait(data)
+                            # Reset failure count on success
+                            failure_counts[queue_id] = 0
                         except queue.Full:
-                            # Skip if queue is full
+                            # Increment failure count
+                            failure_counts[queue_id] = failure_counts.get(queue_id, 0) + 1
+
+                            # Mark for removal if threshold exceeded
+                            if failure_counts[queue_id] >= MAX_CONSECUTIVE_FAILURES:
+                                queues_to_remove.append(q)
+
+                    # Remove stale queues (likely disconnected clients)
+                    for q in queues_to_remove:
+                        try:
+                            client_queues.remove(q)
+                            queue_id = id(q)
+                            if queue_id in failure_counts:
+                                del failure_counts[queue_id]
+                            print(f"Removed stale audio queue (consecutive failures: {MAX_CONSECUTIVE_FAILURES})")
+                        except ValueError:
+                            # Queue already removed
                             pass
                 except Exception as e:
                     print(f"Audio read error: {e}")
