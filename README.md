@@ -37,7 +37,8 @@ uv run python -m remote_game_console \
   --audio-device 1 \
   --audio-rate 48000 \
   --override-aspect-ratio-width 16 \
-  --override-aspect-ratio-height 9
+  --override-aspect-ratio-height 9 \
+  --jpeg-quality 60
 ```
 
 Access the web UI at `http://localhost:8080`
