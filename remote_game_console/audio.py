@@ -98,7 +98,9 @@ def _daemon(
 ) -> None:
     # Track consecutive failures for each queue to detect disconnected clients
     failure_counts: dict[int, int] = {}
-    MAX_CONSECUTIVE_FAILURES = args.queue_size * 2  # Threshold for removing stale queues
+    MAX_CONSECUTIVE_FAILURES = (
+        args.queue_size * 2
+    )  # Threshold for removing stale queues
 
     p = pyaudio.PyAudio()
     try:
@@ -127,7 +129,9 @@ def _daemon(
                             failure_counts[queue_id] = 0
                         except queue.Full:
                             # Increment failure count
-                            failure_counts[queue_id] = failure_counts.get(queue_id, 0) + 1
+                            failure_counts[queue_id] = (
+                                failure_counts.get(queue_id, 0) + 1
+                            )
 
                             # Mark for removal if threshold exceeded
                             if failure_counts[queue_id] >= MAX_CONSECUTIVE_FAILURES:
@@ -140,7 +144,9 @@ def _daemon(
                             queue_id = id(q)
                             if queue_id in failure_counts:
                                 del failure_counts[queue_id]
-                            print(f"Removed stale audio queue (consecutive failures: {MAX_CONSECUTIVE_FAILURES})")
+                            print(
+                                f"Removed stale audio queue (consecutive failures: {MAX_CONSECUTIVE_FAILURES})"
+                            )
                         except ValueError:
                             # Queue already removed
                             pass
@@ -155,17 +161,50 @@ def _daemon(
 
 
 class Audio:
-    def __init__(self, audio_queue: remote_game_console.protocols.Queue, rate: int, channels: int, gain: float):
+    def __init__(
+        self,
+        audio_queue: remote_game_console.protocols.Queue,
+        rate: int,
+        channels: int,
+        gain: float,
+        queue_size: int,
+    ):
         self.__queue = audio_queue
         self.rate = rate
         self.channels = channels
         self.gain = gain
         self.sample_width = 2  # paInt16 = 2 bytes
+        self.__queue_size = queue_size
 
-    def get(self) -> bytes:
+    def get(self, skip_if_behind: float = 0.0) -> bytes:
         try:
             # Get data from queue
             data = self.__queue.get(timeout=1)
+
+            # If skip_if_behind is enabled and queue is too full, skip old chunks to catch up
+            if skip_if_behind > 0:
+                # Check queue size (approximation using qsize if available)
+                try:
+                    current_size = self.__queue.qsize()
+                    # Calculate threshold based on ratio
+                    threshold = max(2, int(self.__queue_size * skip_if_behind))
+                    if current_size >= threshold:
+                        skipped = 0
+                        while current_size > 1:
+                            try:
+                                data = self.__queue.get_nowait()
+                                current_size = self.__queue.qsize()
+                                skipped += 1
+                            except queue.Empty:
+                                break
+                        if skipped > 0:
+                            print(
+                                f"Audio: skipped {skipped} chunks to catch up (queue size: {current_size + skipped} -> {current_size}, threshold: {threshold}/{self.__queue_size})"
+                            )
+                except NotImplementedError:
+                    # qsize() not available on all platforms, skip optimization
+                    pass
+
             return data
         except queue.Empty:
             raise TimeoutError("Audio.get: queue.get timeout")
@@ -195,7 +234,9 @@ class AudioManager:
         """Create a new Audio instance for a client with its own queue."""
         client_queue = self.__manager.Queue(maxsize=self.__queue_size)
         self.__client_queues.append(client_queue)
-        return Audio(client_queue, self.rate, self.channels, self.gain)
+        return Audio(
+            client_queue, self.rate, self.channels, self.gain, self.__queue_size
+        )
 
     def remove_client(self, audio: Audio) -> None:
         """Remove a client's queue from the broadcast list."""
@@ -237,7 +278,9 @@ def start(
     )
     daemon.start()
     try:
-        yield AudioManager(client_queues, manager, args.rate, args.channels, args.gain, args.queue_size)
+        yield AudioManager(
+            client_queues, manager, args.rate, args.channels, args.gain, args.queue_size
+        )
     finally:
         cancel.set()
         try:

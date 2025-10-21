@@ -92,7 +92,9 @@ def validate(args: argparse.Namespace) -> Arguments | None:
         return None
     jpeg_quality = max(1, min(100, args.jpeg_quality))
 
-    return Arguments(port, override_aspect_ratio, audio_buffer_size, audio_min_buffer, jpeg_quality)
+    return Arguments(
+        port, override_aspect_ratio, audio_buffer_size, audio_min_buffer, jpeg_quality
+    )
 
 
 def start(
@@ -123,7 +125,9 @@ def start(
         log_interval = 5.0  # Log FPS every 5 seconds
 
         while True:
-            frame_bytes = video.get_jpeg(quality=args.jpeg_quality, wait_for_new_frame=True, timeout=1.0)
+            frame_bytes = video.get_jpeg(
+                quality=args.jpeg_quality, wait_for_new_frame=True, timeout=1.0
+            )
 
             frame_count += 1
             current_time = time.time()
@@ -137,9 +141,7 @@ def start(
                 start_time = current_time
 
             yield (
-                b"--frame\r\nContent-Type: image/jpeg\r\n\r\n"
-                + frame_bytes
-                + b"\r\n"
+                b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
             )
 
     @app.route("/video_feed")
@@ -165,7 +167,7 @@ def start(
         try:
             while True:
                 try:
-                    data = client.get()
+                    data = client.get(skip_if_behind=0.25)
                     # Send chunk size (4 bytes, big-endian) followed by data
                     chunk_size = len(data)
                     yield chunk_size.to_bytes(4, byteorder="big") + data

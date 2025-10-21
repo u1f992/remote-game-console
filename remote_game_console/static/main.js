@@ -128,10 +128,10 @@ async function streamAudio() {
       let buffer = new Uint8Array(0);
 
       while (isPlaying) {
-        if (audioBufferQueue.length >= TARGET_BUFFER_SIZE) {
-          // Buffer is full, wait before reading more
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          continue;
+        // If buffer is too full, drop old chunks to maintain low latency
+        while (audioBufferQueue.length >= TARGET_BUFFER_SIZE) {
+          const dropped = audioBufferQueue.shift();
+          console.warn(`Audio: dropped chunk to prevent latency buildup (buffer: ${audioBufferQueue.length}/${TARGET_BUFFER_SIZE})`);
         }
 
         // Read chunk size (4 bytes)
