@@ -6,6 +6,7 @@ Web-based remote control system for video, audio, and game controller streaming 
 
 - Video streaming (MJPEG)
 - Audio streaming (HTTP streaming with Web Audio API)
+  - **Multi-client support**: Each client receives independent audio streams without interference
 - Game controller ([NX Macro Controller](https://blog.bzl-web.com/entry/2020/01/20/165719) compatible serial commands)
 
 ![](screenshot.png)
@@ -50,6 +51,8 @@ http://localhost:8080/?noaudio=1
 ```
 
 ## Audio Latency Control
+
+Each client maintains its own audio buffer queue. The `--audio-queue-size` parameter controls the buffer size per client, while `--audio-buffer-size` and `--audio-min-buffer` control the frontend playback buffer.
 
 #### Low Latency
 

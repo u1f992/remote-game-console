@@ -86,7 +86,7 @@ def validate(args: argparse.Namespace) -> Arguments | None:
 def start(
     args: Arguments,
     video: remote_game_console.video.Video,
-    audio: remote_game_console.audio.Audio,
+    audio: remote_game_console.audio.AudioManager,
     controller: remote_game_console.serial_port.Controller,
 ) -> None:
     static_folder = pathlib.Path(__file__).parent / "static"
@@ -125,23 +125,30 @@ def start(
 
     @app.route("/audio_chunk")
     def _audio_chunk() -> flask.Response:
+        client = audio.create_client()
         try:
-            data = audio.get()
+            data = client.get()
             return flask.Response(data, mimetype="application/octet-stream")
         except TimeoutError:
             return flask.Response(b"", mimetype="application/octet-stream", status=204)
+        finally:
+            audio.remove_client(client)
 
     def _generate_audio() -> typing.Generator[bytes, None, None]:
         """Stream audio chunks continuously over a single HTTP connection."""
-        while True:
-            try:
-                data = audio.get()
-                # Send chunk size (4 bytes, big-endian) followed by data
-                chunk_size = len(data)
-                yield chunk_size.to_bytes(4, byteorder='big') + data
-            except TimeoutError:
-                # Send zero-length chunk on timeout
-                yield (0).to_bytes(4, byteorder='big')
+        client = audio.create_client()
+        try:
+            while True:
+                try:
+                    data = client.get()
+                    # Send chunk size (4 bytes, big-endian) followed by data
+                    chunk_size = len(data)
+                    yield chunk_size.to_bytes(4, byteorder='big') + data
+                except TimeoutError:
+                    # Send zero-length chunk on timeout
+                    yield (0).to_bytes(4, byteorder='big')
+        finally:
+            audio.remove_client(client)
 
     @app.route("/audio_stream")
     def _audio_stream() -> flask.Response:

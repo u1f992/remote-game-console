@@ -33,6 +33,21 @@ class Queue(typing.Protocol):
         raise NotImplementedError()
 
 
+class List(typing.Protocol):
+    """
+    Protocol for multiprocessing.Manager().list().
+    """
+
+    def append(self, item: typing.Any) -> None:
+        raise NotImplementedError()
+
+    def remove(self, item: typing.Any) -> None:
+        raise NotImplementedError()
+
+    def __iter__(self) -> typing.Iterator[typing.Any]:
+        raise NotImplementedError()
+
+
 class Manager(typing.Protocol):
     """
     Protocol for multiprocessing.Manager to enable dependency injection.
@@ -42,4 +57,7 @@ class Manager(typing.Protocol):
         raise NotImplementedError()
 
     def Queue(self, maxsize: int = 0) -> Queue:
+        raise NotImplementedError()
+
+    def list(self) -> List:
         raise NotImplementedError()
