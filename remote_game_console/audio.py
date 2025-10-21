@@ -1,8 +1,9 @@
 import argparse
 import contextlib
+import ctypes
 import dataclasses
 import multiprocessing
-import queue
+import multiprocessing.sharedctypes
 import typing
 
 import pyaudio  # type: ignore
@@ -15,7 +16,7 @@ _DEFAULT_CHANNELS: typing.Final = 2
 _DEFAULT_CHUNK: typing.Final = 1024
 _DEFAULT_FORMAT: typing.Final = pyaudio.paInt16
 _DEFAULT_GAIN: typing.Final = 1.0
-_DEFAULT_QUEUE_SIZE: typing.Final = 8
+_DEFAULT_BUFFER_SIZE: typing.Final = 8  # Number of chunks to buffer (for compatibility)
 # Common sample rates to test (may not be exhaustive)
 _SAMPLE_RATES: typing.Final = [8000, 11025, 16000, 22050, 44100, 48000, 96000, 192000]
 
@@ -43,10 +44,10 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
             "default": _DEFAULT_GAIN,
             "help": f"default: {_DEFAULT_GAIN}",
         },
-        "--audio-queue-size": {
+        "--audio-buffer-chunks": {
             "type": int,
-            "default": _DEFAULT_QUEUE_SIZE,
-            "help": f"backend queue size, affects latency and stability. default: {_DEFAULT_QUEUE_SIZE}",
+            "default": _DEFAULT_BUFFER_SIZE,
+            "help": f"number of audio chunks to buffer (deprecated, kept for compatibility). default: {_DEFAULT_BUFFER_SIZE}",
         },
     }
     for name, kwargs in args.items():
@@ -60,7 +61,7 @@ class Arguments:
     channels: int
     chunk: int
     gain: float
-    queue_size: int
+    buffer_chunks: int
 
 
 def validate(args: argparse.Namespace) -> Arguments | None:
@@ -84,16 +85,28 @@ def validate(args: argparse.Namespace) -> Arguments | None:
         return None
     gain = max(0.0, float(args.audio_gain))
 
-    if not isinstance(args.audio_queue_size, int):
+    if not isinstance(args.audio_buffer_chunks, int):
         return None
-    queue_size = max(1, args.audio_queue_size)
+    buffer_chunks = max(1, args.audio_buffer_chunks)
 
-    return Arguments(device, rate, channels, chunk, gain, queue_size)
+    return Arguments(device, rate, channels, chunk, gain, buffer_chunks)
+
+
+_SharedBuffer = ctypes.Array[ctypes.c_uint8]
+
+
+def _get_chunk_size(args: Arguments) -> int:
+    """Calculate the size of one audio chunk in bytes."""
+    # paInt16 = 2 bytes per sample
+    # chunk = number of frames
+    # channels = number of channels
+    return args.chunk * args.channels * 2
 
 
 def _daemon(
-    audio_queue: remote_game_console.protocols.Queue,
+    shared_buffer: _SharedBuffer,
     args: Arguments,
+    ready: remote_game_console.protocols.Event,
     cancel: remote_game_console.protocols.Event,
 ) -> None:
     p = pyaudio.PyAudio()
@@ -109,12 +122,20 @@ def _daemon(
         try:
             while not cancel.is_set():
                 try:
+                    # Read audio data
                     data = stream.read(args.chunk, exception_on_overflow=False)
+
+                    # Wait for ready signal and write to shared buffer
+                    if not ready.wait(timeout=1):
+                        continue
+                    ready.clear()
                     try:
-                        audio_queue.put_nowait(data)
-                    except queue.Full:
-                        # Skip if queue is full
-                        pass
+                        # Copy data to shared buffer
+                        chunk_bytes = bytes(data)
+                        for i, byte in enumerate(chunk_bytes):
+                            shared_buffer[i] = byte
+                    finally:
+                        ready.set()
                 except Exception as e:
                     print(f"Audio read error: {e}")
                     break
@@ -126,20 +147,34 @@ def _daemon(
 
 
 class Audio:
-    def __init__(self, audio_queue: remote_game_console.protocols.Queue, rate: int, channels: int, gain: float):
-        self.__queue = audio_queue
+    def __init__(
+        self,
+        shared_buffer: _SharedBuffer,
+        chunk_size: int,
+        ready: remote_game_console.protocols.Event,
+        rate: int,
+        channels: int,
+        gain: float,
+    ):
+        self.__shared_buffer = shared_buffer
+        self.__chunk_size = chunk_size
+        self.__ready = ready
         self.rate = rate
         self.channels = channels
         self.gain = gain
         self.sample_width = 2  # paInt16 = 2 bytes
 
     def get(self) -> bytes:
+        """Get the latest audio chunk from shared buffer (non-destructive read)."""
+        if not self.__ready.wait(timeout=1):
+            raise TimeoutError("Audio.get: ready.wait timeout")
+        self.__ready.clear()
         try:
-            # Get data from queue
-            data = self.__queue.get(timeout=1)
+            # Copy data from shared buffer
+            data = bytes(self.__shared_buffer[: self.__chunk_size])
             return data
-        except queue.Empty:
-            raise TimeoutError("Audio.get: queue.get timeout")
+        finally:
+            self.__ready.set()
 
 
 def _test_device(args: Arguments) -> None:
@@ -164,16 +199,22 @@ def start(
 ) -> typing.Generator[Audio, None, None]:
     _test_device(args)
 
-    audio_queue = manager.Queue(maxsize=args.queue_size)
+    # Create shared buffer for one audio chunk
+    chunk_size = _get_chunk_size(args)
+    shared_buffer = multiprocessing.sharedctypes.RawArray(ctypes.c_uint8, chunk_size)
+
+    ready = manager.Event()
+    ready.set()  # Initially ready for writing
     cancel = manager.Event()
+
     daemon = multiprocessing.Process(
         target=_daemon,
-        args=(audio_queue, args, cancel),
+        args=(shared_buffer, args, ready, cancel),
         daemon=True,
     )
     daemon.start()
     try:
-        yield Audio(audio_queue, args.rate, args.channels, args.gain)
+        yield Audio(shared_buffer, chunk_size, ready, args.rate, args.channels, args.gain)
     finally:
         cancel.set()
         try:
