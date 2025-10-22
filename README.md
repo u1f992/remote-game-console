@@ -16,8 +16,187 @@ Web-based remote control system for video, audio, and game controller streaming 
 #### Ubuntu 24.04
 
 ```bash
-$ sudo apt-get install -y portaudio19-dev  # for pyaudio
+$ sudo apt install --yes build-essential python3-dev portaudio19-dev  # for pyaudio
 ```
+
+<details>
+<figure>
+<figcaption>without build-essential</figcaption>
+
+```
+$ uv sync
+Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+Creating virtual environment at: .venv
+Resolved 21 packages in 0.59ms
+  × Failed to build `pyaudio==0.2.14`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `setuptools.build_meta.build_wheel` failed (exit status: 1)
+
+      [stdout]
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-x86_64-cpython-312/pyaudio
+      copying src/pyaudio/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/pyaudio
+      running build_ext
+      building 'pyaudio._portaudio' extension
+      creating build/temp.linux-x86_64-cpython-312/src/pyaudio
+      x86_64-linux-gnu-gcc -fno-strict-overflow -Wsign-compare
+      -DNDEBUG -g -O2 -Wall -fPIC -I/usr/local/include -I/usr/include
+      -I/home/mukai/.cache/uv/builds-v0/.tmpvnQdqI/include
+      -I/usr/include/python3.12 -c src/pyaudio/device_api.c -o
+      build/temp.linux-x86_64-cpython-312/src/pyaudio/device_api.o
+
+      [stderr]
+      /home/mukai/.cache/uv/builds-v0/.tmpvnQdqI/lib/python3.12/site-packages/setuptools/dist.py:759:
+      SetuptoolsDeprecationWarning: License classifiers are deprecated.
+      !!
+
+      
+      ********************************************************************************
+              Please consider removing the following classifiers in favor of a
+      SPDX license expression:
+
+              License :: OSI Approved :: MIT License
+
+              See
+      https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+      for details.
+      
+      ********************************************************************************
+
+      !!
+        self._finalize_license_expression()
+      error: command 'x86_64-linux-gnu-gcc' failed: No such file or directory
+
+      hint: This usually indicates a problem with the package or the build
+      environment.
+  help: `pyaudio` (v0.2.14) was included because `remote-game-console`
+        (v0.1.0) depends on `pyaudio`
+```
+
+</figure>
+<figure>
+<figcaption>without python3-dev</figcaption>
+
+```
+$ uv sync
+Resolved 21 packages in 0.60ms
+  × Failed to build `pyaudio==0.2.14`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `setuptools.build_meta.build_wheel` failed (exit status: 1)
+
+      [stdout]
+      running bdist_wheel
+      running build
+      running build_py
+      copying src/pyaudio/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/pyaudio
+      running build_ext
+      building 'pyaudio._portaudio' extension
+      x86_64-linux-gnu-gcc -fno-strict-overflow -Wsign-compare
+      -DNDEBUG -g -O2 -Wall -fPIC -I/usr/local/include -I/usr/include
+      -I/home/mukai/.cache/uv/builds-v0/.tmpfiz1In/include
+      -I/usr/include/python3.12 -c src/pyaudio/device_api.c -o
+      build/temp.linux-x86_64-cpython-312/src/pyaudio/device_api.o
+
+      [stderr]
+      /home/mukai/.cache/uv/builds-v0/.tmpfiz1In/lib/python3.12/site-packages/setuptools/dist.py:759:
+      SetuptoolsDeprecationWarning: License classifiers are deprecated.
+      !!
+
+      
+      ********************************************************************************
+              Please consider removing the following classifiers in favor of a
+      SPDX license expression:
+
+              License :: OSI Approved :: MIT License
+
+              See
+      https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+      for details.
+      
+      ********************************************************************************
+
+      !!
+        self._finalize_license_expression()
+      In file included from src/pyaudio/device_api.c:1:
+      src/pyaudio/device_api.h:7:10: fatal error: Python.h:
+      そのようなファイルやディレクトリはありません
+          7 | #include "Python.h"
+            |          ^~~~~~~~~~
+      compilation terminated.
+      error: command '/usr/bin/x86_64-linux-gnu-gcc' failed with exit code 1
+
+      hint: This usually indicates a problem with the package or the build
+      environment.
+  help: `pyaudio` (v0.2.14) was included because `remote-game-console`
+        (v0.1.0) depends on `pyaudio`
+```
+
+</figure>
+<figure>
+<figcaption>without portaudio19-dev</figcaption>
+
+```
+$ uv sync
+Resolved 21 packages in 0.70ms
+  × Failed to build `pyaudio==0.2.14`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `setuptools.build_meta.build_wheel` failed (exit status: 1)
+
+      [stdout]
+      running bdist_wheel
+      running build
+      running build_py
+      copying src/pyaudio/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/pyaudio
+      running build_ext
+      building 'pyaudio._portaudio' extension
+      x86_64-linux-gnu-gcc -fno-strict-overflow -Wsign-compare
+      -DNDEBUG -g -O2 -Wall -fPIC -I/usr/local/include -I/usr/include
+      -I/home/mukai/.cache/uv/builds-v0/.tmpR25thR/include
+      -I/usr/include/python3.12 -c src/pyaudio/device_api.c -o
+      build/temp.linux-x86_64-cpython-312/src/pyaudio/device_api.o
+
+      [stderr]
+      /home/mukai/.cache/uv/builds-v0/.tmpR25thR/lib/python3.12/site-packages/setuptools/dist.py:759:
+      SetuptoolsDeprecationWarning: License classifiers are deprecated.
+      !!
+
+      
+      ********************************************************************************
+              Please consider removing the following classifiers in favor of a
+      SPDX license expression:
+
+              License :: OSI Approved :: MIT License
+
+              See
+      https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+      for details.
+      
+      ********************************************************************************
+
+      !!
+        self._finalize_license_expression()
+      src/pyaudio/device_api.c:9:10: fatal error: portaudio.h:
+      そのようなファイルやディレクトリはありません
+          9 | #include "portaudio.h"
+            |          ^~~~~~~~~~~~~
+      compilation terminated.
+      error: command '/usr/bin/x86_64-linux-gnu-gcc' failed with exit code 1
+
+      hint: This usually indicates a problem with the package or the build
+      environment.
+  help: `pyaudio` (v0.2.14) was included because `remote-game-console`
+        (v0.1.0) depends on `pyaudio`
+$ apt-file search include/portaudio.h
+portaudio19-dev: /usr/include/portaudio.h
+```
+
+</figure>
+</details>
 
 ## Installation
 
