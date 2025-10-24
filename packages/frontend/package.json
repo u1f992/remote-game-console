@@ -7,5 +7,8 @@
   },
   "devDependencies": {
     "esbuild": "^0.24.2"
+  },
+  "dependencies": {
+    "nipplejs": "^0.10.2"
   }
 }
