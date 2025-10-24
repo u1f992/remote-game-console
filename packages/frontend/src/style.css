@@ -1,0 +1,374 @@
+@font-face {
+  font-family: "Noto Sans";
+  src: url("Noto_Sans/NotoSans-Bold.ttf");
+  font-weight: bold;
+  font-style: normal;
+}
+
+:root {
+  --vh: 1vh;
+  --button-bg: rgba(255, 255, 255, 0.5);
+  --button-bg-active: rgba(255, 255, 255, 0.25);
+  --bg-color: #000;
+  --text-opacity: 0.4;
+  --text-color: rgba(0, 0, 0, var(--text-opacity));
+
+  --abxy-center-bottom: 240px;
+  --abxy-center-right: 125px;
+  --abxy-distance-x: 75px;
+  --abxy-distance-y: 50px;
+
+  --shoulder-button-width: 120px;
+  --shoulder-button-distance-x: 15px;
+  --btn-zr-right: calc(
+    var(--shoulder-button-width) + var(--shoulder-button-distance-x)
+  );
+  --btn-zl-left: calc(
+    var(--shoulder-button-width) + var(--shoulder-button-distance-x)
+  );
+  --shoulder-button-height: 45px;
+  --shoulder-button-border-radius: 5px;
+
+  --btn-pm-top: 60px;
+  --btn-pm-distance-from-edge-y: 280px;
+
+  /* joystick-size-value is set by JavaScript */
+  --joystick-size: calc(var(--joystick-size-value) * 1px);
+  --joystick-zone-size: calc(var(--joystick-size) * 1.5);
+  --right-joystick-bottom: 20px;
+  --right-joystick-right: 180px;
+
+  --left-joystick-bottom: 175px;
+  --left-joystick-left: 75px;
+
+  --click-button-height: 60px;
+  --click-button-width: 32px;
+  --click-button-distance: 15px;
+
+  --hat-size: 58px;
+  --hat-center-left: 230px;
+  --hat-center-bottom: 85px;
+  --hat-distance-x: 52px;
+  --hat-distance-y: 52px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  position: fixed;
+}
+
+#video-container {
+  width: 100%;
+  height: 100dvh;
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+#video-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}
+
+#btn-b {
+  position: absolute;
+  bottom: calc(var(--abxy-center-bottom) - var(--abxy-distance-y));
+  right: var(--abxy-center-right);
+}
+
+#btn-x {
+  position: absolute;
+  bottom: calc(var(--abxy-center-bottom) + var(--abxy-distance-y));
+  right: var(--abxy-center-right);
+}
+
+#btn-y {
+  position: absolute;
+  bottom: var(--abxy-center-bottom);
+  right: calc(var(--abxy-center-right) + var(--abxy-distance-x));
+}
+
+#btn-a {
+  position: absolute;
+  bottom: var(--abxy-center-bottom);
+  right: calc(var(--abxy-center-right) - var(--abxy-distance-x));
+}
+
+#btn-down {
+  position: absolute;
+  bottom: calc(var(--hat-center-bottom) - var(--hat-distance-y));
+  left: var(--hat-center-left);
+}
+
+#btn-up {
+  position: absolute;
+  bottom: calc(var(--hat-center-bottom) + var(--hat-distance-y));
+  left: var(--hat-center-left);
+}
+
+#btn-left {
+  position: absolute;
+  bottom: var(--hat-center-bottom);
+  left: calc(var(--hat-center-left) - var(--hat-distance-x));
+}
+
+#btn-right {
+  position: absolute;
+  bottom: var(--hat-center-bottom);
+  left: calc(var(--hat-center-left) + var(--hat-distance-x));
+}
+
+#btn-r {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-top-right-radius: calc(
+    var(--shoulder-button-height) - var(--shoulder-button-border-radius)
+  );
+}
+
+#btn-zr {
+  position: absolute;
+  top: 0;
+  right: var(--btn-zr-right);
+}
+
+#btn-l {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-top-left-radius: calc(
+    var(--shoulder-button-height) - var(--shoulder-button-border-radius)
+  );
+}
+
+#btn-zl {
+  position: absolute;
+  top: 0;
+  left: var(--btn-zl-left);
+}
+
+#btn-plus {
+  position: absolute;
+  top: var(--btn-pm-top);
+  right: var(--btn-pm-distance-from-edge-y);
+}
+
+#btn-minus {
+  position: absolute;
+  top: var(--btn-pm-top);
+  left: var(--btn-pm-distance-from-edge-y);
+}
+
+#btn-home {
+  position: absolute;
+  bottom: 20px;
+  right: 380px;
+}
+
+#btn-capture {
+  position: absolute;
+  bottom: 20px;
+  left: 380px;
+}
+
+#right-joystick {
+  position: absolute;
+  bottom: var(--right-joystick-bottom);
+  right: var(--right-joystick-right);
+  width: var(--joystick-zone-size);
+  height: var(--joystick-zone-size);
+}
+
+#btn-rclick {
+  position: absolute;
+  bottom: calc(
+    var(--right-joystick-bottom) + calc(var(--joystick-zone-size) / 2) -
+      calc(var(--click-button-height) / 2)
+  );
+  right: calc(
+    var(--right-joystick-right) - var(--click-button-width) -
+      var(--click-button-distance)
+  );
+}
+
+#left-joystick {
+  position: absolute;
+  width: var(--joystick-zone-size);
+  height: var(--joystick-zone-size);
+  bottom: var(--left-joystick-bottom);
+  left: var(--left-joystick-left);
+}
+
+#btn-lclick {
+  position: absolute;
+  bottom: calc(
+    var(--left-joystick-bottom) + calc(var(--joystick-zone-size) / 2) -
+      calc(var(--click-button-height) / 2)
+  );
+  left: calc(
+    var(--left-joystick-left) - var(--click-button-width) -
+      var(--click-button-distance)
+  );
+}
+
+.circle-button {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: var(--button-bg);
+  border: none;
+  font: bold 30px "Noto Sans", sans-serif;
+  color: var(--text-color);
+  transition: background-color 0.1s ease;
+}
+
+.circle-button:active,
+.circle-button.active {
+  background-color: var(--button-bg-active);
+}
+
+.circle-button::before,
+.square-button::before {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+.circle-button.hat {
+  width: var(--hat-size);
+  height: var(--hat-size);
+}
+
+.circle-button.up::before {
+  content: "";
+  background: no-repeat center/110% url("icons/arrow_drop_up.svg");
+  opacity: var(--text-opacity);
+}
+
+.circle-button.down::before {
+  content: "";
+  background: no-repeat center/110% url("icons/arrow_drop_down.svg");
+  opacity: var(--text-opacity);
+}
+
+.circle-button.left::before {
+  content: "";
+  background: no-repeat center/110% url("icons/arrow_left.svg");
+  opacity: var(--text-opacity);
+}
+
+.circle-button.right::before {
+  content: "";
+  background: no-repeat center/110% url("icons/arrow_right.svg");
+  opacity: var(--text-opacity);
+}
+
+.circle-button.home {
+  width: 50px;
+  height: 50px;
+}
+
+.circle-button.home::before {
+  content: "";
+  background: no-repeat center/80% url("icons/home.svg");
+  opacity: var(--text-opacity);
+}
+
+.square-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 5px;
+  background-color: var(--button-bg);
+  border: none;
+  transition: background-color 0.1s ease;
+}
+
+.square-button.capture::before {
+  content: "";
+  background: no-repeat center/80% url("icons/screen_record.svg");
+  opacity: var(--text-opacity);
+}
+
+.shoulder-button {
+  width: var(--shoulder-button-width);
+  height: var(--shoulder-button-height);
+  border-radius: var(--shoulder-button-border-radius);
+  background-color: var(--button-bg);
+  border: none;
+  font: bold 25px "Noto Sans", sans-serif;
+  color: var(--text-color);
+  transition: background-color 0.1s ease;
+}
+
+.shoulder-button:active,
+.shoulder-button.active {
+  background-color: var(--button-bg-active);
+}
+
+.click-button {
+  width: 32px;
+  height: var(--click-button-height);
+  border-radius: 16px;
+  background-color: var(--button-bg);
+  border: none;
+  transition: background-color 0.1s ease;
+}
+
+.click-button:active,
+.click-button.active {
+  background-color: var(--button-bg-active);
+}
+
+.plus-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  font-size: 0;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M35 0h30v35h35v30H65v35H35V65H0V35h35z" fill="rgba(255,255,255,0.5)"/></svg>')
+    center/40px 40px no-repeat;
+  transition: background 0.1s ease;
+}
+
+.plus-button:active,
+.plus-button.active {
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M35 0h30v35h35v30H65v35H35V65H0V35h35z" fill="rgba(255,255,255,0.25)"/></svg>')
+    center/40px 40px no-repeat;
+}
+
+.minus-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  font-size: 0;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="0" y="35" width="100" height="30" fill="rgba(255,255,255,0.5)"/></svg>')
+    center/40px 40px no-repeat;
+  transition: background 0.1s ease;
+}
+
+.minus-button:active,
+.minus-button.active {
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="0" y="35" width="100" height="30" fill="rgba(255,255,255,0.25)"/></svg>')
+    center/40px 40px no-repeat;
+}

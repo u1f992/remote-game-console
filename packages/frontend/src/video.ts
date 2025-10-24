@@ -1,6 +1,7 @@
 function setViewportHeight() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
+  console.log({ vh });
 }
 
 setViewportHeight();
@@ -49,6 +50,7 @@ export function overrideAspectRatio({
     videoStream.style.height = `${videoHeight}px`;
   }
 
+  updateVideoSize();
   window.addEventListener("resize", updateVideoSize);
   window.addEventListener("orientationchange", updateVideoSize);
 }
