@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @remote-game-console/backend && npm run build -w @remote-game-console/frontend && shx cp -r packages/frontend/dist packages/backend/dist/public",
+    "build": "npm run build -w @remote-game-console/backend && npm run build -w @remote-game-console/frontend && shx rm -rf packages/backend/dist/public && shx cp -r packages/frontend/dist packages/backend/dist/public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

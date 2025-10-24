@@ -81,9 +81,18 @@ export function start(ffmpegConfig: {
   size?: { width: number; height: number };
   fps?: number;
   maxFrameSize: number;
+  verbose?: boolean;
 }) {
-  const { ffmpeg, format, device, inputFormat, size, fps, maxFrameSize } =
-    ffmpegConfig;
+  const {
+    ffmpeg,
+    format,
+    device,
+    inputFormat,
+    size,
+    fps,
+    maxFrameSize,
+    verbose,
+  } = ffmpegConfig;
 
   const BOUNDARY = `ffmpeg-video-${crypto.randomUUID()}`;
   const PENDING_FRAME = Symbol("pendingFrame");
@@ -181,9 +190,11 @@ export function start(ffmpegConfig: {
       }),
     );
 
-    process!.stderr!.on("data", (data) => {
-      console.error(`[video] ${data}`);
-    });
+    if (verbose) {
+      process!.stderr!.on("data", (data) => {
+        console.error(`[video] ${data}`);
+      });
+    }
   })();
 
   return {

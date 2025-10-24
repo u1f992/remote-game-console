@@ -8,9 +8,17 @@ export function start(ffmpegConfig: {
   channels: number;
   sampleRate: number;
   maxBufferSize: number;
+  verbose?: boolean;
 }) {
-  const { ffmpeg, format, device, channels, sampleRate, maxBufferSize } =
-    ffmpegConfig;
+  const {
+    ffmpeg,
+    format,
+    device,
+    channels,
+    sampleRate,
+    maxBufferSize,
+    verbose,
+  } = ffmpegConfig;
 
   const PENDING_CHUNK = Symbol("pendingChunk");
   const IS_BACKPRESSURED = Symbol("isBackpressured");
@@ -96,9 +104,11 @@ export function start(ffmpegConfig: {
       });
     });
 
-    process!.stderr!.on("data", (data) => {
-      console.error(`[audio] ${data}`);
-    });
+    if (verbose) {
+      process!.stderr!.on("data", (data) => {
+        console.error(`[audio] ${data}`);
+      });
+    }
   })();
 
   return {

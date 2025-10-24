@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "serialport": "^13.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

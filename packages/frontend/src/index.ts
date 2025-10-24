@@ -4,32 +4,46 @@ import "./joystick.js";
 import "./buttons.js";
 
 const params = new URLSearchParams(window.location.search);
+const noAudio = params.get("noAudio") === "true";
 const audioTargetLatency = params.get("audioTargetLatency");
 const audioMaxLatency = params.get("audioMaxLatency");
-const videoAspectRatioHeight = params.get("videoAspectRatioHeight");
 const videoAspectRatioWidth = params.get("videoAspectRatioWidth");
+const videoAspectRatioHeight = params.get("videoAspectRatioHeight");
 
 if (
-  audioTargetLatency === null ||
-  audioMaxLatency === null ||
+  !noAudio &&
+  (audioTargetLatency === null || audioMaxLatency === null) ||
   (videoAspectRatioWidth === null &&
     typeof videoAspectRatioHeight === "string") ||
   (typeof videoAspectRatioWidth === "string" && videoAspectRatioHeight === null)
 ) {
-  const defaultParams = new URLSearchParams({
-    audioTargetLatency: "50",
-    audioMaxLatency: "200",
-  });
-  window.location.href = `${window.location.pathname}?${defaultParams.toString()}`;
+  const newParams = new URLSearchParams(params);
+  if (!noAudio) {
+    if (audioTargetLatency === null) {
+      newParams.set("audioTargetLatency", "50");
+    }
+    if (audioMaxLatency === null) {
+      newParams.set("audioMaxLatency", "200");
+    }
+  }
+  if (videoAspectRatioWidth === null && typeof videoAspectRatioHeight === "string") {
+    newParams.delete("videoAspectRatioHeight");
+  }
+  if (typeof videoAspectRatioWidth === "string" && videoAspectRatioHeight === null) {
+    newParams.delete("videoAspectRatioWidth");
+  }
+  window.location.href = `${window.location.pathname}?${newParams.toString()}`;
 }
 
-const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "50") / 1000;
-const AUDIO_MAX_LATENCY = parseFloat(audioMaxLatency ?? "200") / 1000;
+if (!noAudio) {
+  const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "50") / 1000;
+  const AUDIO_MAX_LATENCY = parseFloat(audioMaxLatency ?? "200") / 1000;
 
-startAudio({
-  targetLatency: AUDIO_TARGET_LATENCY,
-  maxLatency: AUDIO_MAX_LATENCY,
-});
+  startAudio({
+    targetLatency: AUDIO_TARGET_LATENCY,
+    maxLatency: AUDIO_MAX_LATENCY,
+  });
+}
 
 if (
   typeof videoAspectRatioWidth === "string" &&

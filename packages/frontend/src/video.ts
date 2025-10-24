@@ -20,6 +20,8 @@ export function overrideAspectRatio({
 }:
   | { width: number; height: number }
   | { width?: undefined; height?: undefined }) {
+  console.log(`[video] apply overrideAspectRatio: ${width}:${height}`);
+
   function updateVideoSize() {
     if (typeof width === "undefined" || typeof height === "undefined") {
       return;
