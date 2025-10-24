@@ -2,9 +2,12 @@
   "name": "remote-game-console",
   "version": "1.0.0",
   "description": "Web-based remote control system for video, audio, and game controller streaming over HTTP.",
-  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc && cp -rf src/public dist/",
+    "build": "npm run build -w @remote-game-console/backend && npm run build -w @remote-game-console/frontend && shx cp -r packages/frontend/dist packages/backend/dist/public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,17 +22,11 @@
     "url": "https://github.com/u1f992/remote-game-console/issues"
   },
   "homepage": "https://github.com/u1f992/remote-game-console#readme",
-  "dependencies": {
-    "express": "^5.1.0",
-    "ws": "^8.18.3"
-  },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
-    "@types/express": "^5.0.4",
-    "@types/node": "^24.9.1",
-    "@types/ws": "^8.18.1",
     "eslint": "^9.38.0",
     "prettier": "^3.6.2",
+    "shx": "^0.4.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2"
   }

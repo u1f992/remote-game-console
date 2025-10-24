@@ -16,10 +16,7 @@ if (!audioTargetLatency || !audioMaxLatency) {
 const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "50") / 1000;
 const AUDIO_MAX_LATENCY = parseFloat(audioMaxLatency ?? "200") / 1000;
 
-/**
- * @typedef {{ channels: number; sampleRate: number }} AudioConfig
- * @returns {Promise<AudioConfig>}
- */
+type AudioConfig = { channels: number; sampleRate: number };
 async function fetchAudioConfig() {
   const response = await fetch("/audio/config");
   const shouldAudioConfig = await response.json();
@@ -31,16 +28,15 @@ async function fetchAudioConfig() {
       `invalid audioConfig: ${JSON.stringify(shouldAudioConfig)}`,
     );
   }
-  return shouldAudioConfig;
+  return shouldAudioConfig as AudioConfig;
 }
 
-/**
- * @param {AudioContext} context
- * @param {AudioConfig} arg1
- * @param {ArrayBuffer} buffer
- * @param {number} playTime
- */
-function playChunk(context, { channels, sampleRate }, buffer, playTime) {
+function playChunk(
+  context: AudioContext,
+  { channels, sampleRate }: AudioConfig,
+  buffer: ArrayBuffer,
+  playTime: number,
+) {
   const int16Array = new Int16Array(buffer);
   const numFrames = int16Array.length / channels;
 
@@ -50,7 +46,7 @@ function playChunk(context, { channels, sampleRate }, buffer, playTime) {
   for (let ch = 0; ch < channels; ch++) {
     const channelData = audioBuffer.getChannelData(ch);
     for (let i = 0; i < numFrames; i++) {
-      channelData[i] = int16Array[i * channels + ch] / 32768.0;
+      channelData[i] = int16Array[i * channels + ch]! / 32768.0;
     }
   }
 
