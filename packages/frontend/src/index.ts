@@ -11,8 +11,7 @@ const videoAspectRatioWidth = params.get("videoAspectRatioWidth");
 const videoAspectRatioHeight = params.get("videoAspectRatioHeight");
 
 if (
-  !noAudio &&
-  (audioTargetLatency === null || audioMaxLatency === null) ||
+  (!noAudio && (audioTargetLatency === null || audioMaxLatency === null)) ||
   (videoAspectRatioWidth === null &&
     typeof videoAspectRatioHeight === "string") ||
   (typeof videoAspectRatioWidth === "string" && videoAspectRatioHeight === null)
@@ -20,23 +19,29 @@ if (
   const newParams = new URLSearchParams(params);
   if (!noAudio) {
     if (audioTargetLatency === null) {
-      newParams.set("audioTargetLatency", "50");
+      newParams.set("audioTargetLatency", "80");
     }
     if (audioMaxLatency === null) {
       newParams.set("audioMaxLatency", "200");
     }
   }
-  if (videoAspectRatioWidth === null && typeof videoAspectRatioHeight === "string") {
+  if (
+    videoAspectRatioWidth === null &&
+    typeof videoAspectRatioHeight === "string"
+  ) {
     newParams.delete("videoAspectRatioHeight");
   }
-  if (typeof videoAspectRatioWidth === "string" && videoAspectRatioHeight === null) {
+  if (
+    typeof videoAspectRatioWidth === "string" &&
+    videoAspectRatioHeight === null
+  ) {
     newParams.delete("videoAspectRatioWidth");
   }
   window.location.href = `${window.location.pathname}?${newParams.toString()}`;
 }
 
 if (!noAudio) {
-  const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "50") / 1000;
+  const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "80") / 1000;
   const AUDIO_MAX_LATENCY = parseFloat(audioMaxLatency ?? "200") / 1000;
 
   startAudio({

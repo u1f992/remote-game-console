@@ -1,13 +1,15 @@
 import child_process from "node:child_process";
 import { WebSocket } from "ws";
 
-export function start(ffmpegConfig: {
+export function start(config: {
   ffmpeg?: string;
   format: string;
   device: string;
   channels: number;
   sampleRate: number;
   maxBufferSize: number;
+  bufferDuration?: number;
+  bufferCapacity?: number;
   verbose?: boolean;
 }) {
   const {
@@ -17,8 +19,10 @@ export function start(ffmpegConfig: {
     channels,
     sampleRate,
     maxBufferSize,
+    bufferDuration = 10,
+    bufferCapacity = 4,
     verbose,
-  } = ffmpegConfig;
+  } = config;
 
   const PENDING_CHUNK = Symbol("pendingChunk");
   const IS_BACKPRESSURED = Symbol("isBackpressured");
@@ -59,6 +63,14 @@ export function start(ffmpegConfig: {
   const clients = new Set<WebSocket>();
   let process: child_process.ChildProcess | null = null;
 
+  const CHUNK_SIZE = Math.floor(
+    // s16le = 2 bytes per sample
+    (sampleRate * channels * 2 * bufferDuration) / 1000,
+  );
+  const BUFFER_SIZE = CHUNK_SIZE * bufferCapacity;
+  const audioBuffer = Buffer.allocUnsafe(BUFFER_SIZE);
+  let bufferFilled = 0;
+
   (function start() {
     // NOTE: assert: process === null
     const bin = ffmpeg ?? "ffmpeg";
@@ -73,6 +85,9 @@ export function start(ffmpegConfig: {
         "-",
       ];
     console.log(`[audio] Starting FFmpeg process: ${bin} ${args.join(" ")}`);
+    console.log(
+      `[audio] Buffer duration: ${bufferDuration}ms, chunk size: ${CHUNK_SIZE} bytes, capacity: ${bufferCapacity} chunks (${BUFFER_SIZE} bytes)`,
+    );
 
     process = child_process
       .spawn(bin, args, {
@@ -88,6 +103,7 @@ export function start(ffmpegConfig: {
 
         process?.removeAllListeners();
         process = null;
+        bufferFilled = 0;
 
         // Attempts to restart unless intentionally terminated by SIGTERM/SIGKILL.
         if (signal !== "SIGTERM" && signal !== "SIGKILL") {
@@ -99,9 +115,44 @@ export function start(ffmpegConfig: {
       });
 
     process!.stdout!.on("data", (data) => {
-      clients.forEach((ws) => {
-        sendToClient(ws, data);
-      });
+      let offset = 0;
+      while (offset < data.length) {
+        const remaining = data.length - offset;
+        const available = audioBuffer.length - bufferFilled;
+
+        // If buffer would overflow, discard old data
+        if (remaining > available) {
+          const bytesToDiscard = remaining - available;
+          console.warn(
+            `[audio] Buffer overflow: discarding ${bytesToDiscard} bytes of old audio data`,
+          );
+          // Shift buffer to make room, discarding oldest data
+          audioBuffer.copy(audioBuffer, 0, bytesToDiscard, bufferFilled);
+          bufferFilled -= bytesToDiscard;
+        }
+
+        // Copy data to buffer
+        const bytesToCopy = Math.min(
+          remaining,
+          audioBuffer.length - bufferFilled,
+        );
+        data.copy(audioBuffer, bufferFilled, offset, offset + bytesToCopy);
+        bufferFilled += bytesToCopy;
+        offset += bytesToCopy;
+
+        // Send chunks when we have enough buffered audio
+        while (bufferFilled >= CHUNK_SIZE) {
+          const chunk = audioBuffer.subarray(0, CHUNK_SIZE);
+
+          clients.forEach((ws) => {
+            sendToClient(ws, chunk);
+          });
+
+          // Shift remaining data to the beginning
+          audioBuffer.copy(audioBuffer, 0, CHUNK_SIZE, bufferFilled);
+          bufferFilled -= CHUNK_SIZE;
+        }
+      }
     });
 
     if (verbose) {

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js"
+    "serve": "node dist/server.js"
   },
   "dependencies": {
     "express": "^5.1.0",
