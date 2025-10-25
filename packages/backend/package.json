@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "json5": "^2.2.3",
     "serialport": "^13.0.0",
     "ws": "^8.18.3"
   },

@@ -34,7 +34,7 @@
 
   /* joystick-size-value is set by JavaScript */
   --joystick-size: calc(var(--joystick-size-value) * 1px);
-  --joystick-zone-size: calc(var(--joystick-size) * 1);
+  --joystick-zone-size: calc(var(--joystick-size) * 1.2);
 
   /* Right joystick center position */
   --right-joystick-center-bottom: calc(

@@ -1,0 +1,45 @@
+{
+  "video": {
+    "format": "v4l2",
+    "device": "/dev/video0",
+    // $ ffmpeg -f v4l2 -list_formats all -i /dev/video0
+    // Compressed:       mjpeg :          Motion-JPEG : ... 640x480
+    "inputFormat": "mjpeg",
+    "size": {
+      "width": 640,
+      "height": 480
+    },
+    "fps": 20,
+    // Video codec arguments: additional ffmpeg args inserted before output format
+    //   Example 1 (copy without re-encoding - most likely the lowest latency):
+    "videoCodecArgs": ["-codec:v", "copy"],
+    //   Example 2 (re-encode with scaling and quality):
+    //     "videoCodecArgs": ["-vf", "scale=iw*3/4:ih*3/4", "-q:v", "8"],
+    //   Example 3 (omit for ffmpeg defaults):
+    //     "videoCodecArgs": [],
+    // Enable low-latency options (nobuffer, low_delay, minimal probe)
+    "lowLatency": true,
+    "maxFrameSize": 52428800, // 50 * 1024 * 1024 = 50MB
+    "verbose": false
+  },
+  "audio": {
+    // ALSA:
+    //   $ ffmpeg -sources alsa
+    //   $ arecord -l
+    // PulseAudio:
+    //   $ ffmpeg -sources pulse
+    "format": "alsa",
+    "device": "hw:CARD=ReceiverSolid,DEV=0",
+    "channels": 1,
+    "sampleRate": 48000,
+    // Enable low-latency options (nobuffer, low_delay, minimal probe)
+    "lowLatency": true,
+    "maxBufferSize": 262144, // 256 * 1024 = 256KB
+    "verbose": false
+  },
+  "controller": {
+    "path": "/dev/ttyUSB0",
+    "baudRate": 9600,
+    "verbose": false
+  }
+}

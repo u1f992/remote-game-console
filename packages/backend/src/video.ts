@@ -80,6 +80,8 @@ export function start(ffmpegConfig: {
   inputFormat?: string;
   size?: { width: number; height: number };
   fps?: number;
+  videoCodecArgs?: string[];
+  lowLatency?: boolean;
   maxFrameSize: number;
   verbose?: boolean;
 }) {
@@ -90,6 +92,8 @@ export function start(ffmpegConfig: {
     inputFormat,
     size,
     fps,
+    videoCodecArgs,
+    lowLatency = true,
     maxFrameSize,
     verbose,
   } = ffmpegConfig;
@@ -144,13 +148,20 @@ export function start(ffmpegConfig: {
     const args =
       // prettier-ignore
       [
+        // Low-latency options for live streaming (when enabled):
+        ...(lowLatency ? [
+          "-fflags", "nobuffer",       // Disable input buffering
+          "-flags", "low_delay",       // Enable low-delay mode
+          "-probesize", "32",          // Minimize stream analysis probe size
+          "-analyzeduration", "0",     // Set stream analysis duration to zero
+        ] : []),
         "-f", format,
         ...(inputFormat ? [format === "v4l2" ? "-input_format" : "-pixel_format", inputFormat] : []),
         ...(size ? ["-video_size", `${size.width}x${size.height}`] : []),
         ...(typeof fps !== "undefined" ? ["-framerate", `${fps}`] : []),
         "-i", device,
         "-an", // no audio
-        ...(inputFormat === "mjpeg" && format === "v4l2" ? ["-codec:v", "copy"] : []),
+        ...(videoCodecArgs ?? []),
         "-f", "mpjpeg",
         "-boundary_tag", BOUNDARY,
         "-",

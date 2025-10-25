@@ -7,6 +7,7 @@ export function start(config: {
   device: string;
   channels: number;
   sampleRate: number;
+  lowLatency?: boolean;
   maxBufferSize: number;
   bufferDuration?: number;
   bufferCapacity?: number;
@@ -18,6 +19,7 @@ export function start(config: {
     device,
     channels,
     sampleRate,
+    lowLatency = true,
     maxBufferSize,
     bufferDuration = 10,
     bufferCapacity = 4,
@@ -77,6 +79,13 @@ export function start(config: {
     const args =
       // prettier-ignore
       [
+        // Low-latency options for live streaming (when enabled):
+        ...(lowLatency ? [
+          "-fflags", "nobuffer",       // Disable input buffering
+          "-flags", "low_delay",       // Enable low-delay mode
+          "-probesize", "32",          // Minimize stream analysis probe size
+          "-analyzeduration", "0",     // Set stream analysis duration to zero
+        ] : []),
         "-f", format,
         "-i", device,
         "-ac", `${channels}`,

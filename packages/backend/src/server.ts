@@ -1,12 +1,34 @@
 import express from "express";
+import JSON5 from "json5";
+import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import url from "node:url";
+import util from "node:util";
 import { WebSocketServer } from "ws";
 
 import { start as startAudio } from "./audio.js";
 import { start as startVideo } from "./video.js";
 import { Button, Hat, start as startController } from "./controller.js";
+
+const { positionals } = util.parseArgs({
+  allowPositionals: true,
+});
+const configFile = positionals[0];
+if (typeof configFile === "undefined") {
+  throw new Error("needs configFile");
+}
+const configContent = fs.readFileSync(configFile, { encoding: "utf-8" });
+const configObj = JSON5.parse(configContent);
+if (
+  !("video" in configObj && "audio" in configObj && "controller" in configObj)
+) {
+  throw new Error('config must contain "video", "audio", "controller"');
+}
+const PORT =
+  "port" in configObj && typeof configObj.port === "number"
+    ? (configObj.port as number)
+    : 8080;
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,35 +36,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-const video = startVideo({
-  format: "v4l2",
-  device: "/dev/video0",
-  // $ ffmpeg -f v4l2 -list_formats all -i /dev/video0
-  // Compressed:       mjpeg :          Motion-JPEG : ... 640x480
-  inputFormat: "mjpeg",
-  size: { width: 640, height: 480 },
-  fps: 20,
-  maxFrameSize: 50 * 1024 * 1024, // 50MB
-  verbose: false,
-});
-const audio = startAudio({
-  // ALSA:
-  //   $ ffmpeg -sources alsa
-  //   $ arecord -l
-  // PulseAudio:
-  //   $ ffmpeg -sources pulse
-  format: "alsa",
-  device: "hw:CARD=ReceiverSolid,DEV=0",
-  channels: 1,
-  sampleRate: 48000,
-  maxBufferSize: 256 * 1024, // 256KB
-  verbose: false,
-});
-const controller = startController({
-  path: "/dev/ttyUSB0",
-  baudRate: 9600,
-  verbose: false,
-});
+const video = startVideo(configObj.video);
+const audio = startAudio(configObj.audio);
+const controller = startController(configObj.controller);
 
 app.get("/video", (req, res) => {
   console.log("[video] Client connected");
@@ -132,8 +128,8 @@ controllerWss.on("connection", (ws) => {
   });
 });
 
-server.listen(8080, () => {
-  console.log("[server] HTTP server listening on port 8080");
+server.listen(PORT, () => {
+  console.log(`[server] HTTP server listening on port ${PORT}`);
   console.log("[server] WebSocket endpoints: /audio, /controller");
 });
 
