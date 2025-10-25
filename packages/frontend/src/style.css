@@ -298,6 +298,7 @@ body {
     sans-serif;
   color: var(--text-color);
   transition: background-color 0.1s ease;
+  user-select: none;
 }
 
 .circle-button:active,
@@ -359,6 +360,7 @@ body {
   background-color: var(--button-bg);
   border: none;
   transition: background-color 0.1s ease;
+  user-select: none;
 }
 
 .square-button.capture::before {
@@ -405,6 +407,7 @@ body {
     sans-serif;
   color: var(--text-color);
   transition: background-color 0.1s ease;
+  user-select: none;
 }
 
 .shoulder-button:active,
@@ -419,6 +422,7 @@ body {
   background-color: var(--button-bg);
   border: none;
   transition: background-color 0.1s ease;
+  user-select: none;
 }
 
 .click-button:active,
@@ -435,6 +439,7 @@ body {
   background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M35 0h30v35h35v30H65v35H35V65H0V35h35z" fill="rgba(255,255,255,0.5)"/></svg>')
     center/40px 40px no-repeat;
   transition: background 0.1s ease;
+  user-select: none;
 }
 
 .plus-button:active,
@@ -452,6 +457,7 @@ body {
   background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="0" y="35" width="100" height="30" fill="rgba(255,255,255,0.5)"/></svg>')
     center/40px 40px no-repeat;
   transition: background 0.1s ease;
+  user-select: none;
 }
 
 .minus-button:active,
