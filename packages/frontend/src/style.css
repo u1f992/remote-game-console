@@ -34,16 +34,39 @@
 
   /* joystick-size-value is set by JavaScript */
   --joystick-size: calc(var(--joystick-size-value) * 1px);
-  --joystick-zone-size: calc(var(--joystick-size) * 1.5);
-  --right-joystick-bottom: 20px;
-  --right-joystick-right: 180px;
+  --joystick-zone-size: calc(var(--joystick-size) * 1);
 
-  --left-joystick-bottom: 175px;
-  --left-joystick-left: 75px;
+  /* Right joystick center position */
+  --right-joystick-center-bottom: calc(
+    20px + calc(var(--joystick-size) * 1.5 / 2)
+  );
+  --right-joystick-center-right: calc(
+    180px + calc(var(--joystick-size) * 1.5 / 2)
+  );
+  --right-joystick-bottom: calc(
+    var(--right-joystick-center-bottom) - var(--joystick-zone-size) / 2
+  );
+  --right-joystick-right: calc(
+    var(--right-joystick-center-right) - var(--joystick-zone-size) / 2
+  );
+
+  /* Left joystick center position */
+  --left-joystick-center-bottom: calc(
+    175px + calc(var(--joystick-size) * 1.5 / 2)
+  );
+  --left-joystick-center-left: calc(
+    75px + calc(var(--joystick-size) * 1.5 / 2)
+  );
+  --left-joystick-bottom: calc(
+    var(--left-joystick-center-bottom) - var(--joystick-zone-size) / 2
+  );
+  --left-joystick-left: calc(
+    var(--left-joystick-center-left) - var(--joystick-zone-size) / 2
+  );
 
   --click-button-height: 60px;
   --click-button-width: 32px;
-  --click-button-distance: 15px;
+  --click-button-distance: 130px;
 
   --hat-size: 58px;
   --hat-center-left: 230px;
@@ -243,8 +266,7 @@ body {
       calc(var(--click-button-height) / 2)
   );
   right: calc(
-    var(--right-joystick-right) - var(--click-button-width) -
-      var(--click-button-distance)
+    var(--right-joystick-center-right) - var(--click-button-distance)
   );
 }
 
@@ -262,10 +284,7 @@ body {
     var(--left-joystick-bottom) + calc(var(--joystick-zone-size) / 2) -
       calc(var(--click-button-height) / 2)
   );
-  left: calc(
-    var(--left-joystick-left) - var(--click-button-width) -
-      var(--click-button-distance)
-  );
+  left: calc(var(--left-joystick-center-left) - var(--click-button-distance));
 }
 
 .circle-button {

@@ -117,5 +117,5 @@ export function setup(controller: ReturnType<typeof start>) {
       });
       lastRightStick = { ...rightStick };
     }
-  }, 1000 / 30);
+  }, 1000 / 60);
 }
