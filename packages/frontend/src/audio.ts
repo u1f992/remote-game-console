@@ -1,3 +1,5 @@
+import { logWarn } from "./log.js";
+
 type AudioServerConfig = { channels: number; sampleRate: number };
 type AudioClientConfig = { targetLatency: number; maxLatency: number };
 
@@ -42,7 +44,7 @@ function playChunk(
   let correctedPlayTime = playTime;
   if (correctedPlayTime < currentTime || latency > maxLatency) {
     correctedPlayTime = currentTime + targetLatency;
-    console.log(
+    logWarn(
       `[audio] Latency reset: was ${(latency * 1000).toFixed(0)}ms, now ${(targetLatency * 1000).toFixed(0)}ms`,
     );
   }

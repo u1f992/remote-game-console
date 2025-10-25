@@ -1,3 +1,5 @@
+import { logError } from "./log.js";
+
 // Button mappings
 const buttonMap = {
   "btn-y": "Y",
@@ -43,7 +45,7 @@ async function updateHat() {
   try {
     await fetch(`/hat/${hatValue}`, { method: "POST" });
   } catch (err) {
-    console.error("Hat update error:", err);
+    logError("Hat update error:", err);
   }
 }
 
@@ -56,7 +58,7 @@ async function updateHat() {
     try {
       await fetch(`/button/press/${buttonName}`, { method: "POST" });
     } catch (err) {
-      console.error("Button press error:", err);
+      logError("Button press error:", err);
     }
   });
 
@@ -64,7 +66,7 @@ async function updateHat() {
     try {
       await fetch(`/button/release/${buttonName}`, { method: "POST" });
     } catch (err) {
-      console.error("Button release error:", err);
+      logError("Button release error:", err);
     }
   });
 
@@ -74,7 +76,7 @@ async function updateHat() {
     try {
       await fetch(`/button/press/${buttonName}`, { method: "POST" });
     } catch (err) {
-      console.error("Button press error:", err);
+      logError("Button press error:", err);
     }
   });
 
@@ -84,7 +86,7 @@ async function updateHat() {
     try {
       await fetch(`/button/release/${buttonName}`, { method: "POST" });
     } catch (err) {
-      console.error("Button release error:", err);
+      logError("Button release error:", err);
     }
   });
 });

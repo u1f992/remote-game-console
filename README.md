@@ -133,3 +133,7 @@ Due to very limited support for the Fullscreen API, there is currently no practi
   - [Arrow Left](https://fonts.google.com/icons?icon.query=arrow+&icon.size=24&icon.color=%231f1f1f&selected=Material+Symbols+Outlined:arrow_left:FILL@0;wght@400;GRAD@0;opsz@24&icon.platform=web)
   - [Home](https://fonts.google.com/icons?icon.size=24&icon.color=%231f1f1f&selected=Material+Symbols+Outlined:home:FILL@0;wght@400;GRAD@0;opsz@24&icon.platform=web)
   - [Screen Record](https://fonts.google.com/icons?icon.query=record&icon.size=24&icon.color=%231f1f1f&selected=Material+Symbols+Outlined:screen_record:FILL@0;wght@400;GRAD@0;opsz@24&icon.platform=web)
+  - [Refresh](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:refresh:FILL@0;wght@400;GRAD@0;opsz@24&icon.query=reload&icon.size=24&icon.color=%25231f1f1f)
+  - [Open In Full](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:open_in_full:FILL@0;wght@400;GRAD@0;opsz@24&icon.query=fullsc&icon.size=24&icon.color=%25231f1f1f)
+  - [Close Fullscreen](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:close_fullscreen:FILL@0;wght@400;GRAD@0;opsz@24&icon.query=fullsc&icon.size=24&icon.color=%25231f1f1f)
+  - [Troubleshoot](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:troubleshoot:FILL@0;wght@400;GRAD@0;opsz@24&icon.query=debug&icon.size=24&icon.color=%25231f1f1f)

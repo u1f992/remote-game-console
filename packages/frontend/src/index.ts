@@ -1,7 +1,45 @@
 import { start as startAudio } from "./audio.js";
 import { overrideAspectRatio } from "./video.js";
+import { logError } from "./log.js";
 import "./joystick.js";
 import "./buttons.js";
+
+document.getElementById("btn-reload")!.addEventListener("click", () => {
+  window.location.reload();
+});
+
+const logArea = document.getElementById("log-area")!;
+document.getElementById("btn-toggle-log")!.addEventListener("click", () => {
+  logArea.classList.toggle("visible");
+
+  // Scroll to bottom when showing log area
+  if (logArea.classList.contains("visible")) {
+    logArea.scrollTop = logArea.scrollHeight;
+  }
+});
+
+const fullscreenButton = document.getElementById("btn-fullscreen")!;
+
+fullscreenButton.addEventListener("click", async () => {
+  if (document.fullscreenElement) {
+    await document.exitFullscreen();
+  } else {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (err) {
+      logError("Failed to enter fullscreen:", err);
+    }
+  }
+});
+
+// Update button state when fullscreen changes
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) {
+    fullscreenButton.classList.add("active");
+  } else {
+    fullscreenButton.classList.remove("active");
+  }
+});
 
 const params = new URLSearchParams(window.location.search);
 const noAudio = params.get("noAudio") === "true";

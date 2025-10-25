@@ -67,6 +67,29 @@ body {
   position: fixed;
 }
 
+#log-area {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 30%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  word-break: break-all;
+  pointer-events: none;
+  display: none;
+}
+
+#log-area.visible {
+  display: block;
+}
+
 #video-container {
   width: 100%;
   height: 100dvh;
@@ -148,6 +171,22 @@ body {
   position: absolute;
   top: 0;
   right: var(--btn-zr-right);
+}
+
+#top-buttons {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+#top-buttons > button {
+  pointer-events: auto;
 }
 
 #btn-l {
@@ -235,7 +274,9 @@ body {
   border-radius: 50%;
   background-color: var(--button-bg);
   border: none;
-  font: bold 30px "Noto Sans", sans-serif;
+  font:
+    bold 30px "Noto Sans",
+    sans-serif;
   color: var(--text-color);
   transition: background-color 0.1s ease;
 }
@@ -307,13 +348,42 @@ body {
   opacity: var(--text-opacity);
 }
 
+#top-buttons .square-button {
+  width: calc(var(--shoulder-button-height) * 0.8);
+  height: calc(var(--shoulder-button-height) * 0.8);
+}
+
+.square-button.reload::before {
+  content: "";
+  background: no-repeat center/80% url("icons/refresh.svg");
+  opacity: var(--text-opacity);
+}
+
+.square-button.fullscreen::before {
+  content: "";
+  background: no-repeat center/80% url("icons/open_in_full.svg");
+  opacity: var(--text-opacity);
+}
+
+.square-button.fullscreen.active::before {
+  background: no-repeat center/80% url("icons/close_fullscreen.svg");
+}
+
+.square-button.toggle-log::before {
+  content: "";
+  background: no-repeat center/80% url("icons/troubleshoot.svg");
+  opacity: var(--text-opacity);
+}
+
 .shoulder-button {
   width: var(--shoulder-button-width);
   height: var(--shoulder-button-height);
   border-radius: var(--shoulder-button-border-radius);
   background-color: var(--button-bg);
   border: none;
-  font: bold 25px "Noto Sans", sans-serif;
+  font:
+    bold 25px "Noto Sans",
+    sans-serif;
   color: var(--text-color);
   transition: background-color 0.1s ease;
 }
