@@ -1,4 +1,4 @@
-import { logError } from "./log.js";
+import type { start } from "./controller.js";
 
 // Button mappings
 const buttonMap = {
@@ -18,79 +18,6 @@ const buttonMap = {
   "btn-capture": "Capture",
 } as const;
 
-// D-pad (Hat) state tracking
-const dpadState = {
-  up: false,
-  down: false,
-  left: false,
-  right: false,
-};
-
-function getHatValue() {
-  const { up, down, left, right } = dpadState;
-
-  if (up && right) return "UpRight";
-  if (up && left) return "UpLeft";
-  if (down && right) return "DownRight";
-  if (down && left) return "DownLeft";
-  if (up) return "Up";
-  if (down) return "Down";
-  if (left) return "Left";
-  if (right) return "Right";
-  return "Neutral";
-}
-
-async function updateHat() {
-  const hatValue = getHatValue();
-  try {
-    await fetch(`/hat/${hatValue}`, { method: "POST" });
-  } catch (err) {
-    logError("Hat update error:", err);
-  }
-}
-
-// Setup button event handlers
-(Object.keys(buttonMap) as (keyof typeof buttonMap)[]).forEach((btnId) => {
-  const button = document.getElementById(btnId)!;
-  const buttonName = buttonMap[btnId];
-
-  button.addEventListener("mousedown", async () => {
-    try {
-      await fetch(`/button/press/${buttonName}`, { method: "POST" });
-    } catch (err) {
-      logError("Button press error:", err);
-    }
-  });
-
-  button.addEventListener("mouseup", async () => {
-    try {
-      await fetch(`/button/release/${buttonName}`, { method: "POST" });
-    } catch (err) {
-      logError("Button release error:", err);
-    }
-  });
-
-  button.addEventListener("touchstart", async (e) => {
-    e.preventDefault();
-    button.classList.add("active");
-    try {
-      await fetch(`/button/press/${buttonName}`, { method: "POST" });
-    } catch (err) {
-      logError("Button press error:", err);
-    }
-  });
-
-  button.addEventListener("touchend", async (e) => {
-    e.preventDefault();
-    button.classList.remove("active");
-    try {
-      await fetch(`/button/release/${buttonName}`, { method: "POST" });
-    } catch (err) {
-      logError("Button release error:", err);
-    }
-  });
-});
-
 // D-pad button mappings
 const dpadButtons = {
   "btn-up": "up",
@@ -99,32 +26,108 @@ const dpadButtons = {
   "btn-right": "right",
 } as const;
 
-// Setup D-pad event handlers
-(Object.keys(dpadButtons) as (keyof typeof dpadButtons)[]).forEach((btnId) => {
-  const button = document.getElementById(btnId)!;
-  const direction = dpadButtons[btnId];
+export function setup(controller: ReturnType<typeof start>) {
+  // D-pad (Hat) state tracking
+  const dpadState = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  };
 
-  button.addEventListener("mousedown", async () => {
-    dpadState[direction] = true;
-    await updateHat();
+  function getHatValue() {
+    const { up, down, left, right } = dpadState;
+
+    if (up && right) return "UpRight";
+    if (up && left) return "UpLeft";
+    if (down && right) return "DownRight";
+    if (down && left) return "DownLeft";
+    if (up) return "Up";
+    if (down) return "Down";
+    if (left) return "Left";
+    if (right) return "Right";
+    return "Neutral";
+  }
+
+  function updateHat() {
+    const hatValue = getHatValue();
+    controller.send({
+      type: "hat",
+      direction: hatValue,
+    });
+  }
+
+  // Setup button event handlers
+  (Object.keys(buttonMap) as (keyof typeof buttonMap)[]).forEach((btnId) => {
+    const button = document.getElementById(btnId)!;
+    const buttonName = buttonMap[btnId];
+
+    button.addEventListener("mousedown", () => {
+      controller.send({
+        type: "button",
+        button: buttonName,
+        action: "press",
+      });
+    });
+
+    button.addEventListener("mouseup", () => {
+      controller.send({
+        type: "button",
+        button: buttonName,
+        action: "release",
+      });
+    });
+
+    button.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      button.classList.add("active");
+      controller.send({
+        type: "button",
+        button: buttonName,
+        action: "press",
+      });
+    });
+
+    button.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      button.classList.remove("active");
+      controller.send({
+        type: "button",
+        button: buttonName,
+        action: "release",
+      });
+    });
   });
 
-  button.addEventListener("mouseup", async () => {
-    dpadState[direction] = false;
-    await updateHat();
-  });
+  // Setup D-pad event handlers
+  (Object.keys(dpadButtons) as (keyof typeof dpadButtons)[]).forEach(
+    (btnId) => {
+      const button = document.getElementById(btnId)!;
+      const direction = dpadButtons[btnId];
 
-  button.addEventListener("touchstart", async (e) => {
-    e.preventDefault();
-    button.classList.add("active");
-    dpadState[direction] = true;
-    await updateHat();
-  });
+      button.addEventListener("mousedown", () => {
+        dpadState[direction] = true;
+        updateHat();
+      });
 
-  button.addEventListener("touchend", async (e) => {
-    e.preventDefault();
-    button.classList.remove("active");
-    dpadState[direction] = false;
-    await updateHat();
-  });
-});
+      button.addEventListener("mouseup", () => {
+        dpadState[direction] = false;
+        updateHat();
+      });
+
+      button.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        button.classList.add("active");
+        dpadState[direction] = true;
+        updateHat();
+      });
+
+      button.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        button.classList.remove("active");
+        dpadState[direction] = false;
+        updateHat();
+      });
+    },
+  );
+}

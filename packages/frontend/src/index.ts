@@ -1,8 +1,13 @@
 import { start as startAudio } from "./audio.js";
 import { overrideAspectRatio } from "./video.js";
 import { logError } from "./log.js";
-import "./joystick.js";
-import "./buttons.js";
+import { start as startController } from "./controller.js";
+import { setup as setupJoystick } from "./joystick.js";
+import { setup as setupButtons } from "./buttons.js";
+
+const controller = startController();
+setupJoystick(controller);
+setupButtons(controller);
 
 document.getElementById("btn-reload")!.addEventListener("click", () => {
   window.location.reload();
