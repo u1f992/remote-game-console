@@ -1,4 +1,4 @@
-import { logWarn } from "./log.js";
+import { log, logWarn, logError } from "./log.js";
 
 type AudioServerConfig = { channels: number; sampleRate: number };
 type AudioClientConfig = { targetLatency: number; maxLatency: number };
@@ -59,27 +59,83 @@ function playChunk(
 }
 
 export function start(clientConfig: AudioClientConfig) {
-  const audio = new WebSocket(
-    `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/audio`,
-  );
-  audio.binaryType = "arraybuffer";
-  audio.addEventListener("open", async () => {
-    const serverConfig = await fetchAudioServerConfig();
-    const context = new AudioContext({
-      sampleRate: serverConfig.sampleRate,
-    });
-    context.resume();
-    // Resume audio context on user interaction (required by browser autoplay policy)
-    document.addEventListener("click", () => {
-      context.resume();
+  let ws: WebSocket | null = null;
+  let reconnectTimer: number | null = null;
+  let context: AudioContext | null = null;
+
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/audio`;
+
+  (function connect() {
+    log("[audio] Connecting to:", wsUrl);
+    ws = new WebSocket(wsUrl);
+    ws.binaryType = "arraybuffer";
+
+    ws.addEventListener("open", async () => {
+      log("[audio] WebSocket connected");
+
+      try {
+        const serverConfig = await fetchAudioServerConfig();
+        context = new AudioContext({
+          sampleRate: serverConfig.sampleRate,
+        });
+        context.resume();
+
+        // Resume audio context on user interaction (required by browser autoplay policy)
+        document.addEventListener("click", () => {
+          context?.resume();
+        });
+
+        let playTime = context.currentTime;
+        ws!.addEventListener("message", ({ data }) => {
+          if (context) {
+            playTime =
+              context.state === "suspended"
+                ? context.currentTime
+                : playChunk(
+                    context,
+                    serverConfig,
+                    clientConfig,
+                    data,
+                    playTime,
+                  );
+          }
+        });
+      } catch (err) {
+        logError("[audio] Failed to initialize audio context:", err);
+      }
     });
 
-    let playTime = context.currentTime;
-    audio.addEventListener("message", ({ data }) => {
-      playTime =
-        context.state === "suspended"
-          ? context.currentTime
-          : playChunk(context, serverConfig, clientConfig, data, playTime);
+    ws.addEventListener("close", (event) => {
+      log("[audio] WebSocket closed:", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
+      ws = null;
+      // Close audio context on disconnect
+      context?.close();
+      context = null;
+      reconnectTimer = window.setTimeout(connect, 1000);
     });
-  });
+
+    ws.addEventListener("error", (err) => {
+      logError("[audio] WebSocket error:", err);
+    });
+  })();
+
+  return {
+    close() {
+      if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      if (context) {
+        context.close();
+        context = null;
+      }
+      ws?.close();
+      ws = null;
+    },
+  };
 }

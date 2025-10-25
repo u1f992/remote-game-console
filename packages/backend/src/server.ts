@@ -45,8 +45,10 @@ const controller = startController({
 });
 
 app.get("/video", (req, res) => {
+  console.log("[video] Client connected");
   video.addClient(res);
   req.on("close", () => {
+    console.log("[video] Client disconnected");
     video.removeClient(res);
   });
 });
@@ -80,8 +82,10 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 audioWss.on("connection", (ws) => {
+  console.log("[audio] Client connected");
   audio.addClient(ws);
   ws.on("close", () => {
+    console.log("[audio] Client disconnected");
     audio.removeClient(ws);
   });
 });
@@ -136,6 +140,7 @@ server.listen(8080, () => {
 const shutdown = () => {
   console.log("\n[server] Shutting down gracefully");
   video.getProcess()?.kill("SIGTERM");
+  audio.getProcess()?.kill("SIGTERM");
   process.exit(0);
 };
 process.on("SIGINT", shutdown);
