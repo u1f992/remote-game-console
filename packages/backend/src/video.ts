@@ -83,6 +83,7 @@ export function start(ffmpegConfig: {
   videoCodecArgs?: string[];
   lowLatency?: boolean;
   maxFrameSize: number;
+  forceRefresh?: number;
   verbose?: boolean;
 }) {
   const {
@@ -95,6 +96,7 @@ export function start(ffmpegConfig: {
     videoCodecArgs,
     lowLatency = true,
     maxFrameSize,
+    forceRefresh,
     verbose,
   } = ffmpegConfig;
 
@@ -141,6 +143,8 @@ export function start(ffmpegConfig: {
 
   const clients = new Set<http.ServerResponse>();
   let process: child_process.ChildProcess | null = null;
+  let forceRefreshTimer: NodeJS.Timeout | null = null;
+  let isForceRefreshing = false;
 
   (function start() {
     // NOTE: assert: process === null
@@ -183,12 +187,26 @@ export function start(ffmpegConfig: {
         process?.removeAllListeners();
         process = null;
 
+        // Clear force refresh timer if it exists
+        if (forceRefreshTimer) {
+          clearTimeout(forceRefreshTimer);
+          forceRefreshTimer = null;
+        }
+
+        const shouldRestart =
+          isForceRefreshing || (signal !== "SIGTERM" && signal !== "SIGKILL");
+
+        // Reset force refresh flag
+        if (isForceRefreshing) {
+          isForceRefreshing = false;
+        }
+
         // Attempts to restart unless intentionally terminated by SIGTERM/SIGKILL.
-        if (signal !== "SIGTERM" && signal !== "SIGKILL") {
-          console.log("[video] Restarting FFmpeg process in 1 second...");
+        if (shouldRestart) {
+          console.log("[video] Restarting FFmpeg process in 250ms...");
           setTimeout(() => {
             start();
-          }, 1000);
+          }, 250);
         }
       });
 
@@ -205,6 +223,20 @@ export function start(ffmpegConfig: {
       process!.stderr!.on("data", (data) => {
         console.error(`[video] ${data}`);
       });
+    }
+
+    // Set up force refresh timer if configured
+    if (forceRefresh && forceRefresh > 0) {
+      console.log(
+        `[video] Force refresh enabled: process will restart every ${forceRefresh} seconds`,
+      );
+      forceRefreshTimer = setTimeout(() => {
+        console.log("[video] Force refresh triggered, restarting process...");
+        if (process) {
+          isForceRefreshing = true;
+          process.kill("SIGTERM");
+        }
+      }, forceRefresh * 1000);
     }
   })();
 

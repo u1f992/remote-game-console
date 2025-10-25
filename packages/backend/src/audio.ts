@@ -11,6 +11,7 @@ export function start(config: {
   maxBufferSize: number;
   bufferDuration?: number;
   bufferCapacity?: number;
+  forceRefresh?: number;
   verbose?: boolean;
 }) {
   const {
@@ -21,8 +22,9 @@ export function start(config: {
     sampleRate,
     lowLatency = true,
     maxBufferSize,
-    bufferDuration = 10,
-    bufferCapacity = 4,
+    bufferDuration = 25,
+    bufferCapacity = 10,
+    forceRefresh,
     verbose,
   } = config;
 
@@ -64,6 +66,8 @@ export function start(config: {
 
   const clients = new Set<WebSocket>();
   let process: child_process.ChildProcess | null = null;
+  let forceRefreshTimer: NodeJS.Timeout | null = null;
+  let isForceRefreshing = false;
 
   const CHUNK_SIZE = Math.floor(
     // s16le = 2 bytes per sample
@@ -114,12 +118,26 @@ export function start(config: {
         process = null;
         bufferFilled = 0;
 
+        // Clear force refresh timer if it exists
+        if (forceRefreshTimer) {
+          clearTimeout(forceRefreshTimer);
+          forceRefreshTimer = null;
+        }
+
+        const shouldRestart =
+          isForceRefreshing || (signal !== "SIGTERM" && signal !== "SIGKILL");
+
+        // Reset force refresh flag
+        if (isForceRefreshing) {
+          isForceRefreshing = false;
+        }
+
         // Attempts to restart unless intentionally terminated by SIGTERM/SIGKILL.
-        if (signal !== "SIGTERM" && signal !== "SIGKILL") {
-          console.log("[audio] Restarting FFmpeg process in 1 second...");
+        if (shouldRestart) {
+          console.log("[audio] Restarting FFmpeg process in 250ms...");
           setTimeout(() => {
             start();
-          }, 1000);
+          }, 250);
         }
       });
 
@@ -168,6 +186,20 @@ export function start(config: {
       process!.stderr!.on("data", (data) => {
         console.error(`[audio] ${data}`);
       });
+    }
+
+    // Set up force refresh timer if configured
+    if (forceRefresh && forceRefresh > 0) {
+      console.log(
+        `[audio] Force refresh enabled: process will restart every ${forceRefresh} seconds`,
+      );
+      forceRefreshTimer = setTimeout(() => {
+        console.log("[audio] Force refresh triggered, restarting process...");
+        if (process) {
+          isForceRefreshing = true;
+          process.kill("SIGTERM");
+        }
+      }, forceRefresh * 1000);
     }
   })();
 

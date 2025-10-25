@@ -396,6 +396,16 @@ body {
   opacity: var(--text-opacity);
 }
 
+.square-button.audio::before {
+  content: "";
+  background: no-repeat center/80% url("icons/no_sound.svg");
+  opacity: var(--text-opacity);
+}
+
+.square-button.audio.active::before {
+  background: no-repeat center/80% url("icons/volume_up.svg");
+}
+
 .shoulder-button {
   width: var(--shoulder-button-width);
   height: var(--shoulder-button-height);

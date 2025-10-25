@@ -62,28 +62,31 @@ export function start(clientConfig: AudioClientConfig) {
   let ws: WebSocket | null = null;
   let reconnectTimer: number | null = null;
   let context: AudioContext | null = null;
+  let isClosed = false;
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const wsUrl = `${protocol}//${window.location.host}/audio`;
 
   (function connect() {
+    if (isClosed) {
+      return;
+    }
     log("[audio] Connecting to:", wsUrl);
     ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
     ws.addEventListener("open", async () => {
+      if (isClosed) {
+        ws?.close();
+        return;
+      }
+
       log("[audio] WebSocket connected");
 
       try {
         const serverConfig = await fetchAudioServerConfig();
         context = new AudioContext({
           sampleRate: serverConfig.sampleRate,
-        });
-        context.resume();
-
-        // Resume audio context on user interaction (required by browser autoplay policy)
-        document.addEventListener("click", () => {
-          context?.resume();
         });
 
         let playTime = context.currentTime;
@@ -116,7 +119,11 @@ export function start(clientConfig: AudioClientConfig) {
       // Close audio context on disconnect
       context?.close();
       context = null;
-      reconnectTimer = window.setTimeout(connect, 1000);
+
+      // Only reconnect if not intentionally closed
+      if (!isClosed) {
+        reconnectTimer = window.setTimeout(connect, 1000);
+      }
     });
 
     ws.addEventListener("error", (err) => {
@@ -125,7 +132,11 @@ export function start(clientConfig: AudioClientConfig) {
   })();
 
   return {
+    resume() {
+      context?.resume();
+    },
     close() {
+      isClosed = true;
       if (reconnectTimer !== null) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;

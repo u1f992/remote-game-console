@@ -47,26 +47,24 @@ document.addEventListener("fullscreenchange", () => {
 });
 
 const params = new URLSearchParams(window.location.search);
-const noAudio = params.get("noAudio") === "true";
 const audioTargetLatency = params.get("audioTargetLatency");
 const audioMaxLatency = params.get("audioMaxLatency");
 const videoAspectRatioWidth = params.get("videoAspectRatioWidth");
 const videoAspectRatioHeight = params.get("videoAspectRatioHeight");
 
 if (
-  (!noAudio && (audioTargetLatency === null || audioMaxLatency === null)) ||
+  audioTargetLatency === null ||
+  audioMaxLatency === null ||
   (videoAspectRatioWidth === null &&
     typeof videoAspectRatioHeight === "string") ||
   (typeof videoAspectRatioWidth === "string" && videoAspectRatioHeight === null)
 ) {
   const newParams = new URLSearchParams(params);
-  if (!noAudio) {
-    if (audioTargetLatency === null) {
-      newParams.set("audioTargetLatency", "80");
-    }
-    if (audioMaxLatency === null) {
-      newParams.set("audioMaxLatency", "200");
-    }
+  if (audioTargetLatency === null) {
+    newParams.set("audioTargetLatency", "100");
+  }
+  if (audioMaxLatency === null) {
+    newParams.set("audioMaxLatency", "250");
   }
   if (
     videoAspectRatioWidth === null &&
@@ -83,15 +81,29 @@ if (
   window.location.href = `${window.location.pathname}?${newParams.toString()}`;
 }
 
-if (!noAudio) {
-  const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "80") / 1000;
-  const AUDIO_MAX_LATENCY = parseFloat(audioMaxLatency ?? "200") / 1000;
+const AUDIO_TARGET_LATENCY = parseFloat(audioTargetLatency ?? "100") / 1000;
+const AUDIO_MAX_LATENCY = parseFloat(audioMaxLatency ?? "250") / 1000;
 
-  startAudio({
-    targetLatency: AUDIO_TARGET_LATENCY,
-    maxLatency: AUDIO_MAX_LATENCY,
-  });
-}
+let audioConnection: ReturnType<typeof startAudio> | null = null;
+const audioButton = document.getElementById("btn-audio")!;
+
+audioButton.addEventListener("click", () => {
+  if (audioConnection) {
+    // Stop audio
+    audioConnection.close();
+    audioConnection = null;
+    audioButton.classList.remove("active");
+  } else {
+    // Start audio
+    audioConnection = startAudio({
+      targetLatency: AUDIO_TARGET_LATENCY,
+      maxLatency: AUDIO_MAX_LATENCY,
+    });
+    // Resume AudioContext (required by browser autoplay policy)
+    audioConnection.resume();
+    audioButton.classList.add("active");
+  }
+});
 
 if (
   typeof videoAspectRatioWidth === "string" &&

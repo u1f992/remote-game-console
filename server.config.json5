@@ -20,6 +20,8 @@
     // Enable low-latency options (nobuffer, low_delay, minimal probe)
     "lowLatency": true,
     "maxFrameSize": 52428800, // 50 * 1024 * 1024 = 50MB
+    // Force refresh: automatically restart FFmpeg process every N seconds
+    // "forceRefresh": 300,
     "verbose": false
   },
   "audio": {
@@ -35,6 +37,8 @@
     // Enable low-latency options (nobuffer, low_delay, minimal probe)
     "lowLatency": true,
     "maxBufferSize": 262144, // 256 * 1024 = 256KB
+    // Force refresh: automatically restart FFmpeg process every N seconds
+    "forceRefresh": 300,
     "verbose": false
   },
   "controller": {
