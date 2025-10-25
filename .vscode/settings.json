@@ -1,8 +1,21 @@
 {
-  "python.analysis.typeCheckingMode": "off",
-  "mypy-type-checker.args": ["--config=${workspaceFolder}/pyproject.toml"],
-  "[python]": {
-    "editor.defaultFormatter": "charliermarsh.ruff",
+  "prettier.configPath": "prettier.config.js",
+  "prettier.prettierPath": "node_modules/prettier",
+  "eslint.useFlatConfig": true,
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   }
 }

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Remote Game Console</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="video-container">
+      <img id="video-stream" src="/video" />
+    </div>
+    <div id="log-area"></div>
+    <div id="top-buttons">
+      <button id="btn-reload" class="square-button reload"></button>
+      <button id="btn-audio" class="square-button audio"></button>
+      <button id="btn-fullscreen" class="square-button fullscreen"></button>
+      <button id="btn-toggle-log" class="square-button toggle-log"></button>
+    </div>
+    <button id="btn-y" class="circle-button">Y</button>
+    <button id="btn-b" class="circle-button">B</button>
+    <button id="btn-a" class="circle-button">A</button>
+    <button id="btn-x" class="circle-button">X</button>
+    <button id="btn-l" class="shoulder-button">L</button>
+    <button id="btn-r" class="shoulder-button">R</button>
+    <button id="btn-zl" class="shoulder-button">ZL</button>
+    <button id="btn-zr" class="shoulder-button">ZR</button>
+    <button id="btn-plus" class="plus-button"></button>
+    <button id="btn-minus" class="minus-button"></button>
+    <button id="btn-lclick" class="click-button"></button>
+    <button id="btn-rclick" class="click-button"></button>
+    <button id="btn-home" class="circle-button home"></button>
+    <button id="btn-capture" class="square-button capture"></button>
+    <button id="btn-up" class="circle-button up hat"></button>
+    <button id="btn-down" class="circle-button down hat"></button>
+    <button id="btn-left" class="circle-button left hat"></button>
+    <button id="btn-right" class="circle-button right hat"></button>
+    <div id="left-joystick"></div>
+    <div id="right-joystick"></div>
+    <script src="index.js" type="module"></script>
+  </body>
+</html>

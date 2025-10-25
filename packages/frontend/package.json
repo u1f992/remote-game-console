@@ -1,0 +1,14 @@
+{
+  "name": "@remote-game-console/frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "shx mkdir -p dist && node build.js && shx cp src/index.html src/style.css dist/ && shx cp -r src/Noto_Sans src/icons dist/"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  },
+  "dependencies": {
+    "nipplejs": "^0.10.2"
+  }
+}
